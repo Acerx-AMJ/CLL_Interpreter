@@ -1,0 +1,129 @@
+#include "interpreter.hpp"
+#include "fmt.hpp"
+
+Interpreter::Interpreter(Program& program, std::unique_ptr<Environment>& environment)
+   : program(program), environment(environment) {}
+
+void Interpreter::evaluate() {
+   for (auto& ast : program.statements) {
+      evaluate_stmt(std::move(ast));
+   }
+}
+
+// Evaluate statement functions
+
+void Interpreter::evaluate_stmt(Stmt stmt) {
+   switch (stmt->type) {
+   case StmtType::var_decl:
+      evaluate_var_decl(std::move(stmt));
+      break;
+   default:
+      evaluate_expr(std::move(stmt));
+      break;
+   }
+}
+
+void Interpreter::evaluate_var_decl(Stmt stmt) {
+   auto& decl = static_cast<VarDeclaration&>(*stmt.get());
+   size_t isize = decl.identifiers.size(), vsize = decl.values.size();
+   Value first = (vsize != 1 ? std::make_unique<NullValue>() : evaluate_expr(decl.values.at(0)->copy()));
+
+   for (int i = 0; i < isize; ++i) {
+      Value value = (vsize != isize && i >= vsize ? std::move(first->copy()) : std::move(evaluate_expr(std::move(decl.values.at(i)))));
+      environment->declare_variable(static_cast<IdentLiteral&>(*decl.identifiers.at(i).get()).identifier, std::move(value), decl.constant);
+   }
+}
+
+// Evaluate expression functions
+
+Value Interpreter::evaluate_expr(Stmt stmt) {
+   switch (stmt->type) {
+   case StmtType::args:
+      fmt::raise("Unexpected argument list while evaluating.");
+      return std::make_unique<NullValue>();
+   case StmtType::assignment:
+      return evaluate_assignment(std::move(stmt));
+   case StmtType::binary:
+      return evaluate_binary_expr(std::move(stmt));
+   case StmtType::call:
+      return evaluate_call_expr(std::move(stmt));
+   case StmtType::unary:
+      return evaluate_unary_expr(std::move(stmt));
+   default:
+      return evaluate_primary_expr(std::move(stmt));
+   }
+}
+
+Value Interpreter::evaluate_unary_expr(Stmt expr) {
+   auto& unary = static_cast<UnaryExpr&>(*expr.get());
+   auto cond = evaluate_expr(std::move(unary.value));
+
+   switch (unary.op) {
+   case Type::plus:
+      return std::move(cond);
+   case Type::minus:
+      return std::move(cond->negate());
+   default:
+      fmt::raise("Unsupported unary command '{}'.", type_str[int(unary.op)]);
+      return std::make_unique<NullValue>();
+   }
+}
+
+Value Interpreter::evaluate_binary_expr(Stmt expr) {
+   auto& binary = static_cast<BinaryExpr&>(*expr.get());
+   auto left = evaluate_expr(std::move(binary.left));
+   auto right = evaluate_expr(std::move(binary.right));
+
+   switch (binary.op) {
+   case Type::plus:
+      return std::move(left->add(right));
+   case Type::minus:
+      return std::move(left->subtract(right));
+   case Type::multiply:
+      return std::move(left->multiply(right));
+   case Type::divide:
+      return std::move(left->divide(right));
+   case Type::remainder:
+      return std::move(left->remainder(right));
+   default:
+      fmt::raise("Unsupported binary command '{}'.", type_str[int(binary.op)]);
+      return std::make_unique<NullValue>();
+   }
+}
+
+Value Interpreter::evaluate_assignment(Stmt expr) {
+   auto& assignment = static_cast<AssignmentExpr&>(*expr.get());
+   auto identifier = static_cast<IdentLiteral&>(*assignment.left.get()).identifier;
+   auto value = evaluate_expr(std::move(assignment.right));
+
+   environment->assign_variable(identifier, value->copy());
+   return std::move(value);
+}
+
+Value Interpreter::evaluate_call_expr(Stmt expr) {
+   auto& call = static_cast<CallExpr&>(*expr.get());
+   std::vector<Value> args;
+   for (auto& arg : static_cast<ArgsListExpr&>(*call.args.get()).args)
+      args.push_back(std::move(evaluate_expr(std::move(arg))));
+
+   return std::move(environment->call_function(static_cast<IdentLiteral&>(*call.identifier.get()).identifier, args));
+}
+
+Value Interpreter::evaluate_primary_expr(Stmt expr) {
+   switch (expr->type) {
+   case StmtType::identifier: {
+      Value ident = std::make_unique<IdentifierValue>(static_cast<IdentLiteral&>(*expr.get()).identifier);
+      while (ident->type == ValueType::identifier) {
+         ident = std::move(environment->get_variable(static_cast<IdentifierValue&>(*ident.get()).identifier));
+      }
+      return std::move(ident);
+   }
+   case StmtType::number:
+      return std::make_unique<NumberValue>(static_cast<NumberLiteral&>(*expr.get()).number);
+   case StmtType::null:
+      return std::make_unique<NullValue>();
+   default:
+      fmt::raise("Unexpected expression while evaluating.");
+      return std::make_unique<NullValue>();
+   }
+}

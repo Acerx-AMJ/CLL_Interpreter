@@ -1,0 +1,23 @@
+#include "file.hpp"
+
+#include "fmt.hpp"
+#include <filesystem>
+#include <fstream>
+
+namespace file {
+   bool exists(const std::string& file) {
+      try { return std::filesystem::is_regular_file(file); }
+      catch (...) { return false; }
+   }
+
+   std::string read(const std::string& file) {
+      std::ifstream fbuf (file);
+      fmt::raise_if(!fbuf, "Could not read file '{}'.", file);
+
+      std::string output, temp;
+      while (std::getline(fbuf, temp)) {
+         output += temp + '\n';
+      }
+      return output;
+   }
+}
