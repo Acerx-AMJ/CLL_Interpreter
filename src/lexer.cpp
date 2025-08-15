@@ -1,7 +1,10 @@
 #include "lexer.hpp"
 #include "fmt.hpp"
 
-std::vector<Token>& Lexer::lex(const std::string& code) {
+Lexer::Lexer(const std::string& code)
+   : code(code) {}
+
+std::vector<Token>& Lexer::lex() {
    tokens.clear();
    line = 1;
 
@@ -28,8 +31,6 @@ std::vector<Token>& Lexer::lex(const std::string& code) {
          }
          ++it;
          fmt::raise_if(it == code.cend(), "Unterminated block comment at line {}.", original_line);
-      } else if (auto t = operators.find(*it); t != operators.end()) {
-         tokens.push_back({t->second, std::string(1, t->first), line});
       } else if (isdigit(*it)) {
          std::string number;
          bool dot = false, last_dash = false, prefix = false, scientific = false;
@@ -99,7 +100,25 @@ std::vector<Token>& Lexer::lex(const std::string& code) {
          }
          --it;
       } else {
-         fmt::raise("Unexpected character: '{}' at line {}.", *it, line);
+         std::string op;
+         for (int i = 0; i < max_op_size && it + i != code.cend(); ++i) {
+            op += *(it + i);
+         }
+         auto original_size = op.size();
+
+         for (int i = 0; i < original_size; ++i) {
+            if (auto t = operators.find(op); t != operators.end()) {
+               tokens.push_back({t->second, op, line});
+               break;
+            }
+            op.pop_back();
+         }
+         fmt::raise_if(op.empty(), "Unexpected character: '{}' at line {}.", *it, line);
+         
+         it += op.size() - 1;
+         if (it == code.cend()) {
+            break;
+         }
       }
    }
    tokens.push_back({Type::eof, "EOF", line});

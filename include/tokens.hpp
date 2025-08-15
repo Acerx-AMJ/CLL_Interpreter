@@ -8,12 +8,19 @@
 using namespace std::string_literals;
 
 enum class Type : char {
-   eof, keyword, identifier, number, equals, plus, minus, multiply, divide, remainder,
+   eof, keyword, identifier, number,
+   increment, decrement, equals,
+   plus_equals, minus_equals, multiply_equals, divide_equals, remainder_equals, exponentiate_equals,
+   plus, minus, multiply, divide, remainder, exponentiate,
    l_paren, r_paren, comma
 };
 
 constexpr std::string_view type_str[] {
-   "EOF", "Keyword", "Identifier", "Number", "=", "+", "-", "*", "/", "%", "(", ")", ","
+   "EOF", "Keyword", "Identifier", "Number",
+   "++", "--", "=",
+   "+=", "-=", "*=", "/=", "%=", "**=",
+   "+", "-", "*", "/", "%", "**",
+   "(", ")", ","
 };
 
 struct Token {
@@ -22,9 +29,12 @@ struct Token {
    int line = 0;
 };
 
-static std::unordered_map<char, Type> operators {
-   {'=', Type::equals}, {'+', Type::plus}, {'-', Type::minus}, {'*', Type::multiply}, {'/', Type::divide}, {'%', Type::remainder},
-   {'(', Type::l_paren}, {')', Type::r_paren}, {',', Type::comma}
+static constexpr int max_op_size = 3;
+static std::unordered_map<std::string_view, Type> operators {
+   {"++", Type::increment}, {"--", Type::decrement}, {"=", Type::equals},
+   {"+=", Type::plus_equals}, {"-=", Type::minus_equals}, {"*=", Type::multiply_equals}, {"/=", Type::divide_equals}, {"%=", Type::remainder_equals}, {"**=", Type::exponentiate_equals},
+   {"+", Type::plus}, {"-", Type::minus}, {"*", Type::multiply}, {"/", Type::divide}, {"%", Type::remainder}, {"**", Type::exponentiate},
+   {"(", Type::l_paren}, {")", Type::r_paren}, {",", Type::comma}
 };
 
 static std::unordered_set<std::string> keywords {

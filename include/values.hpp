@@ -24,11 +24,14 @@ struct ValueLiteral {
 
    virtual Value copy() const = 0;
    virtual Value negate() const = 0;
+   virtual Value increment() = 0;
+   virtual Value decrement() = 0;
    virtual Value add(Value& other) const = 0;
    virtual Value subtract(Value& other) const = 0;
    virtual Value multiply(Value& other) const = 0;
    virtual Value divide(Value& other) const = 0;
    virtual Value remainder(Value& other) const = 0;
+   virtual Value exponentiate(Value& other) const = 0;
 };
 
 struct IdentifierValue : public ValueLiteral {
@@ -39,11 +42,14 @@ struct IdentifierValue : public ValueLiteral {
 
    Value copy() const override;
    Value negate() const override;
+   Value increment() override;
+   Value decrement() override;
    Value add(Value& other) const override;
    Value subtract(Value& other) const override;
    Value multiply(Value& other) const override;
    Value divide(Value& other) const override;
    Value remainder(Value& other) const override;
+   Value exponentiate(Value& other) const override;
 };
 
 struct NumberValue : public ValueLiteral {
@@ -54,11 +60,14 @@ struct NumberValue : public ValueLiteral {
 
    Value copy() const override;
    Value negate() const override;
+   Value increment() override;
+   Value decrement() override;
    Value add(Value& other) const override;
    Value subtract(Value& other) const override;
    Value multiply(Value& other) const override;
    Value divide(Value& other) const override;
    Value remainder(Value& other) const override;
+   Value exponentiate(Value& other) const override;
 };
 
 struct NullValue : public ValueLiteral {
@@ -67,11 +76,14 @@ struct NullValue : public ValueLiteral {
 
    Value copy() const override;
    Value negate() const override;
+   Value increment() override;
+   Value decrement() override;
    Value add(Value& other) const override;
    Value subtract(Value& other) const override;
    Value multiply(Value& other) const override;
    Value divide(Value& other) const override;
    Value remainder(Value& other) const override;
+   Value exponentiate(Value& other) const override;
 };
 
 #endif

@@ -56,13 +56,17 @@ Value Interpreter::evaluate_expr(Stmt stmt) {
 
 Value Interpreter::evaluate_unary_expr(Stmt expr) {
    auto& unary = static_cast<UnaryExpr&>(*expr.get());
-   auto cond = evaluate_expr(std::move(unary.value));
+   auto value = evaluate_expr(std::move(unary.value));
 
    switch (unary.op) {
    case Type::plus:
-      return std::move(cond);
+      return std::move(value);
    case Type::minus:
-      return std::move(cond->negate());
+      return std::move(value->negate());
+   case Type::increment:
+      return std::move(value->increment());
+   case Type::decrement:
+      return std::move(value->decrement());
    default:
       fmt::raise("Unsupported unary command '{}'.", type_str[int(unary.op)]);
       return std::make_unique<NullValue>();
@@ -85,6 +89,8 @@ Value Interpreter::evaluate_binary_expr(Stmt expr) {
       return std::move(left->divide(right));
    case Type::remainder:
       return std::move(left->remainder(right));
+   case Type::exponentiate:
+      return std::move(left->exponentiate(right));
    default:
       fmt::raise("Unsupported binary command '{}'.", type_str[int(binary.op)]);
       return std::make_unique<NullValue>();
@@ -93,8 +99,35 @@ Value Interpreter::evaluate_binary_expr(Stmt expr) {
 
 Value Interpreter::evaluate_assignment(Stmt expr) {
    auto& assignment = static_cast<AssignmentExpr&>(*expr.get());
+   fmt::raise_if(assignment.left->type != StmtType::identifier, "Expected an 'IdentifierLiteral' at the left side of the '{}' operator, got '{}' instead at line {}.", type_str[int(assignment.op)], stmt_type_str[int(assignment.left->type)], assignment.left->line);
+   
    auto identifier = static_cast<IdentLiteral&>(*assignment.left.get()).identifier;
    auto value = evaluate_expr(std::move(assignment.right));
+
+   switch (assignment.op) {
+   case Type::equals:
+      break;
+   case Type::plus_equals:
+      value = environment->get_variable(identifier)->add(value);
+      break;
+   case Type::minus_equals:
+      value = environment->get_variable(identifier)->subtract(value);
+      break;
+   case Type::multiply_equals:
+      value = environment->get_variable(identifier)->multiply(value);
+      break;
+   case Type::divide_equals:
+      value = environment->get_variable(identifier)->divide(value);
+      break;
+   case Type::remainder_equals:
+      value = environment->get_variable(identifier)->remainder(value);
+      break;
+   case Type::exponentiate_equals:
+      value = environment->get_variable(identifier)->exponentiate(value);
+      break;
+   default:
+      fmt::raise("Unsupported assignment command '{}'.", type_str[int(assignment.op)]);
+   };
 
    environment->assign_variable(identifier, value->copy());
    return std::move(value);

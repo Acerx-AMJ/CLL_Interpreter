@@ -5,11 +5,13 @@
 #include <vector>
 
 class Lexer {
+   const std::string& code;
    std::vector<Token> tokens;
    int line = 1;
 
 public:
-   std::vector<Token>& lex(const std::string& code);
+   Lexer(const std::string& code);
+   std::vector<Token>& lex();
 };
 
 #endif

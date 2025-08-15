@@ -12,16 +12,16 @@ int main(int argc, char* argv[]) {
       code = file::read(code);
    }
 
-   Lexer lexer;
-   auto& tokens = lexer.lex(code);
-   for (const auto& t : tokens) {
-      fmt::printfln("{}: '{}' at line {}.", type_str[int(t.type)], t.lexeme, t.line);
-   }
-   fmt::println();
+   Lexer lexer (code);
+   auto& tokens = lexer.lex();
+   // for (const auto& t : tokens) {
+   //    fmt::printfln("{}: '{}' at line {}.", type_str[int(t.type)], t.lexeme, t.line);
+   // }
+   // fmt::println();
 
    Parser parser (tokens);
    auto& program = parser.parse();
-   program.print();
+   // program.print();
 
    std::unique_ptr<Environment> env = Environment::create_global();
    Interpreter interpreter (program, env);

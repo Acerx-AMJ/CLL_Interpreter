@@ -70,7 +70,7 @@ Stmt Parser::parse_expr() {
 Stmt Parser::parse_assignment_expr() {
    auto left = parse_additive_expr();
 
-   while (is(Type::equals)) {
+   while (is(Type::equals) || is(Type::plus_equals) || is(Type::minus_equals) || is(Type::multiply_equals) || is(Type::divide_equals) || is(Type::remainder_equals) || is(Type::exponentiate_equals)) {
       Type op = current().type;
       advance();
 
@@ -94,27 +94,57 @@ Stmt Parser::parse_additive_expr() {
 }
 
 Stmt Parser::parse_multiplicative_expr() {
-   auto left = parse_unary_expr();
+   auto left = parse_exponentiative_expr();
 
    while (is(Type::multiply) || is(Type::divide) || is(Type::remainder)) {
       Type op = current().type;
       advance();
 
-      auto right = parse_unary_expr();
+      auto right = parse_exponentiative_expr();
+      left = std::make_unique<BinaryExpr>(op, std::move(left), std::move(right), line());
+   }
+   return std::move(left);
+}
+
+Stmt Parser::parse_exponentiative_expr() {
+   auto left = parse_unary_expr();
+
+   while (is(Type::exponentiate)) {
+      Type op = current().type;
+      advance();
+
+      auto right = parse_exponentiative_expr();
       left = std::make_unique<BinaryExpr>(op, std::move(left), std::move(right), line());
    }
    return std::move(left);
 }
 
 Stmt Parser::parse_unary_expr() {
-   if (is(Type::minus) || is(Type::plus)) {
-      Type op = current().type;
-      advance();
+   std::vector<Type> ops;
 
-      auto expr = parse_call_expr();
-      return std::make_unique<UnaryExpr>(op, std::move(expr), line());
+   while (is(Type::minus) || is(Type::plus) || is(Type::increment) || is(Type::decrement)) {
+      ops.push_back(current().type);
+      advance();
    }
-   return parse_call_expr();
+   auto expr = parse_reverse_unary_expr();
+   for (const auto& op : ops) {
+      expr = std::make_unique<UnaryExpr>(op, std::move(expr), line());
+   }
+   return expr;
+}
+
+Stmt Parser::parse_reverse_unary_expr() {
+   auto expr = parse_call_expr();
+   std::vector<Type> ops;
+
+   while (is(Type::increment) || is (Type::decrement)) {
+      ops.push_back(current().type);
+      advance();
+   }
+   for (const auto& op : ops) {
+      expr = std::make_unique<UnaryExpr>(op, std::move(expr), line());
+   }
+   return expr;
 }
 
 Stmt Parser::parse_call_expr() {
