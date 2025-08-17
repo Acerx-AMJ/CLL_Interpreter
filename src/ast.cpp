@@ -23,13 +23,32 @@ void VarDeclaration::print(int indentation) const {
 
 Stmt VarDeclaration::copy() const {
    std::vector<Stmt> copied_identifiers, copied_values;
-   for (const auto& identifier : identifiers)
+   for (const auto& identifier : identifiers) {
       copied_identifiers.push_back(std::move(identifier->copy()));
+   }
    
-   for (const auto& value : values)
+   for (const auto& value : values) {
       copied_values.push_back(std::move(value->copy()));
-
+   }
    return std::make_unique<VarDeclaration>(constant, std::move(copied_identifiers), std::move(copied_values), line);
+}
+
+DeleteStmt::DeleteStmt(std::vector<Stmt> identifiers, int line)
+   : identifiers(std::move(identifiers)), Statement(StmtType::del, line) {}
+
+void DeleteStmt::print(int indentation) const {
+   std::cout << std::string(indentation, ' ') << "Delete Statement:\n";
+   for (const auto& identifier : identifiers) {
+      identifier->print(indentation + 2);
+   }
+}
+
+Stmt DeleteStmt::copy() const {
+   std::vector<Stmt> copied_identifiers;
+   for (const auto& identifier : identifiers) {
+      copied_identifiers.push_back(std::move(identifier->copy()));
+   }
+   return std::make_unique<DeleteStmt>(std::move(copied_identifiers), line);
 }
 
 AssignmentExpr::AssignmentExpr(Type op, Stmt left, Stmt right, int line)
@@ -98,8 +117,9 @@ void ArgsListExpr::print(int indentation) const {
 
 Stmt ArgsListExpr::copy() const {
    std::vector<Stmt> copied_args;
-   for (const auto& arg : args)
+   for (const auto& arg : args) {
       copied_args.push_back(std::move(arg->copy()));
+   }
    return std::make_unique<ArgsListExpr>(std::move(copied_args), line);
 }
 
@@ -123,6 +143,28 @@ void NumberLiteral::print(int indentation) const {
 
 Stmt NumberLiteral::copy() const {
    return std::make_unique<NumberLiteral>(number, line);
+}
+
+CharLiteral::CharLiteral(char character, int line)
+   : character(character), Statement(StmtType::character, line) {}
+
+void CharLiteral::print(int indentation) const {
+   std::cout << std::string(indentation, ' ') << '\'' << character << "'\n";
+}
+
+Stmt CharLiteral::copy() const {
+   return std::make_unique<CharLiteral>(character, line);
+}
+
+StringLiteral::StringLiteral(const std::string& string, int line)
+   : string(string), Statement(StmtType::string, line) {}
+
+void StringLiteral::print(int indentation) const {
+   std::cout << std::string(indentation, ' ') << '"' << string << "\"\n";
+}
+
+Stmt StringLiteral::copy() const {
+   return std::make_unique<StringLiteral>(string, line);
 }
 
 NullLiteral::NullLiteral(int line)

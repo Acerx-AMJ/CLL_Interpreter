@@ -5,11 +5,11 @@
 #include <string>
 
 enum class ValueType : char {
-   identifier, number, null
+   identifier, number, character, string, null
 };
 
 constexpr std::string_view value_type_str[] {
-   "IdentifierValue", "NumberValue", "NullValue"   
+   "Identifier", "Number", "Character", "String", "Null"   
 };
 
 struct ValueLiteral;
@@ -53,9 +53,45 @@ struct IdentifierValue : public ValueLiteral {
 };
 
 struct NumberValue : public ValueLiteral {
-   long double number = 0;
+   long double number;
 
    NumberValue(long double number);
+   void print() const override;
+
+   Value copy() const override;
+   Value negate() const override;
+   Value increment() override;
+   Value decrement() override;
+   Value add(Value& other) const override;
+   Value subtract(Value& other) const override;
+   Value multiply(Value& other) const override;
+   Value divide(Value& other) const override;
+   Value remainder(Value& other) const override;
+   Value exponentiate(Value& other) const override;
+};
+
+struct CharValue : public ValueLiteral {
+   char ch;
+
+   CharValue(char ch);
+   void print() const override;
+
+   Value copy() const override;
+   Value negate() const override;
+   Value increment() override;
+   Value decrement() override;
+   Value add(Value& other) const override;
+   Value subtract(Value& other) const override;
+   Value multiply(Value& other) const override;
+   Value divide(Value& other) const override;
+   Value remainder(Value& other) const override;
+   Value exponentiate(Value& other) const override;
+};
+
+struct StringValue : public ValueLiteral {
+   std::string string;
+
+   StringValue(const std::string& string);
    void print() const override;
 
    Value copy() const override;

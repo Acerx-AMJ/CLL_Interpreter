@@ -17,6 +17,9 @@ void Interpreter::evaluate_stmt(Stmt stmt) {
    case StmtType::var_decl:
       evaluate_var_decl(std::move(stmt));
       break;
+   case StmtType::del:
+      evaluate_del_stmt(std::move(stmt));
+      break;
    default:
       evaluate_expr(std::move(stmt));
       break;
@@ -34,13 +37,19 @@ void Interpreter::evaluate_var_decl(Stmt stmt) {
    }
 }
 
+void Interpreter::evaluate_del_stmt(Stmt stmt) {
+   auto& del = static_cast<DeleteStmt&>(*stmt.get());
+   for (const auto& identifier : del.identifiers) {
+      environment->delete_variable(static_cast<IdentLiteral&>(*identifier.get()).identifier);
+   }
+}
+
 // Evaluate expression functions
 
 Value Interpreter::evaluate_expr(Stmt stmt) {
    switch (stmt->type) {
    case StmtType::args:
       fmt::raise("Unexpected argument list while evaluating.");
-      return std::make_unique<NullValue>();
    case StmtType::assignment:
       return evaluate_assignment(std::move(stmt));
    case StmtType::binary:
@@ -69,7 +78,6 @@ Value Interpreter::evaluate_unary_expr(Stmt expr) {
       return std::move(value->decrement());
    default:
       fmt::raise("Unsupported unary command '{}'.", type_str[int(unary.op)]);
-      return std::make_unique<NullValue>();
    }
 }
 
@@ -93,7 +101,6 @@ Value Interpreter::evaluate_binary_expr(Stmt expr) {
       return std::move(left->exponentiate(right));
    default:
       fmt::raise("Unsupported binary command '{}'.", type_str[int(binary.op)]);
-      return std::make_unique<NullValue>();
    }
 }
 
@@ -153,10 +160,13 @@ Value Interpreter::evaluate_primary_expr(Stmt expr) {
    }
    case StmtType::number:
       return std::make_unique<NumberValue>(static_cast<NumberLiteral&>(*expr.get()).number);
+   case StmtType::character:
+      return std::make_unique<CharValue>(static_cast<CharLiteral&>(*expr.get()).character);
+   case StmtType::string:
+      return std::make_unique<StringValue>(static_cast<StringLiteral&>(*expr.get()).string);
    case StmtType::null:
       return std::make_unique<NullValue>();
    default:
       fmt::raise("Unexpected expression while evaluating.");
-      return std::make_unique<NullValue>();
    }
 }

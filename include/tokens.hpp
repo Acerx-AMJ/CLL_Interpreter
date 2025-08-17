@@ -8,7 +8,7 @@
 using namespace std::string_literals;
 
 enum class Type : char {
-   eof, keyword, identifier, number,
+   eof, keyword, identifier, number, character, string,
    increment, decrement, equals,
    plus_equals, minus_equals, multiply_equals, divide_equals, remainder_equals, exponentiate_equals,
    plus, minus, multiply, divide, remainder, exponentiate,
@@ -16,7 +16,7 @@ enum class Type : char {
 };
 
 constexpr std::string_view type_str[] {
-   "EOF", "Keyword", "Identifier", "Number",
+   "EOF", "Keyword", "Identifier", "Number", "Character", "String",
    "++", "--", "=",
    "+=", "-=", "*=", "/=", "%=", "**=",
    "+", "-", "*", "/", "%", "**",
@@ -38,7 +38,7 @@ static std::unordered_map<std::string_view, Type> operators {
 };
 
 static std::unordered_set<std::string> keywords {
-   "let"s, "con"s
+   "let"s, "con"s, "delete"s
 };
 
 #endif

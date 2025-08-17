@@ -6,12 +6,12 @@
 #include <vector>
 
 enum class StmtType : char {
-   var_decl, assignment, binary, unary, call, args, identifier, number, null
+   var_decl, del, assignment, binary, unary, call, args, identifier, number, character, string, null
 };
 
 constexpr std::string_view stmt_type_str[] {
-   "VariableDeclaration", "AssignmentExpression", "BinaryExpression", "UnaryExpression",
-   "CallExpression", "ArgumentListExpression", "IdentifierLiteral", "NumberLiteral", "NullLiteral"
+   "VariableDeclaration", "DeleteStatement", "AssignmentExpression", "BinaryExpression", "UnaryExpression",
+   "CallExpression", "ArgumentListExpression", "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "NullLiteral"
 };
 
 struct Statement;
@@ -33,6 +33,14 @@ struct VarDeclaration : public Statement {
    std::vector<Stmt> values;
 
    VarDeclaration(bool constant, std::vector<Stmt> identifiers, std::vector<Stmt> values, int line);
+   void print(int indentation) const override;
+   Stmt copy() const override;
+};
+
+struct DeleteStmt : public Statement {
+   std::vector<Stmt> identifiers;
+
+   DeleteStmt(std::vector<Stmt> identifiers, int line);
    void print(int indentation) const override;
    Stmt copy() const override;
 };
@@ -95,6 +103,22 @@ struct NumberLiteral : public Statement {
    long double number;
 
    NumberLiteral(long double number, int line);
+   void print(int indentation) const override;
+   Stmt copy() const override;
+};
+
+struct CharLiteral : public Statement {
+   char character;
+
+   CharLiteral(char character, int line);
+   void print(int indentation) const override;
+   Stmt copy() const override;
+};
+
+struct StringLiteral : public Statement {
+   std::string string;
+
+   StringLiteral(const std::string& string, int line);
    void print(int indentation) const override;
    Stmt copy() const override;
 };

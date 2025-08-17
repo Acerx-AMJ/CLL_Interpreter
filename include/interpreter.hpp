@@ -10,6 +10,7 @@ class Interpreter {
 
    void evaluate_stmt(Stmt stmt);
    void evaluate_var_decl(Stmt stmt);
+   void evaluate_del_stmt(Stmt stmt);
    
    Value evaluate_expr(Stmt expr);
    Value evaluate_unary_expr(Stmt expr);

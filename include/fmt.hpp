@@ -73,7 +73,7 @@ namespace fmt {
 
    // Raise functions
    template<typename... Args>
-   void raise(const char* error, const Args&... args) {
+   [[noreturn]] void raise(const char* error, const Args&... args) {
       throw fmt::exception(fmt::format(error, args...));
    }
 

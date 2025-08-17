@@ -18,10 +18,12 @@ Stmt Parser::parse_stmt() {
 
    if (token.type == Type::keyword) {
       if (token.lexeme == "let"s || token.lexeme == "con"s) {
-         return std::move(parse_var_decl());
+         return parse_var_decl();
+      } else if (token.lexeme == "delete"s) {
+         return parse_del_stmt();
       }
    }
-   return std::move(parse_expr());
+   return parse_expr();
 }
 
 Stmt Parser::parse_var_decl() {
@@ -59,6 +61,25 @@ Stmt Parser::parse_var_decl() {
 
    fmt::raise_if(constant, "Expected constant variable at line {} to have initialized value.", line());
    return std::make_unique<VarDeclaration>(constant, std::move(identifiers), std::move(body), line());
+}
+
+Stmt Parser::parse_del_stmt() {
+   advance();
+
+   std::vector<Stmt> identifiers;
+   auto identifier = std::move(parse_primary_expr());
+   fmt::raise_if(identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead at line {}.", stmt_type_str[int(identifier->type)], line());
+
+   while (is(Type::comma)) {
+      advance();
+      identifiers.push_back(std::move(identifier));
+      identifier = std::move(parse_primary_expr());
+      fmt::raise_if(identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead at line {}.", stmt_type_str[int(identifier->type)], line());
+   }
+
+   identifiers.push_back(std::move(identifier));
+   std::vector<Stmt> body;
+   return std::make_unique<DeleteStmt>(std::move(identifiers), line());
 }
 
 // Parse expression functions
@@ -201,6 +222,14 @@ Stmt Parser::parse_primary_expr() {
       }
       advance();
       return std::make_unique<NumberLiteral>(number, line());
+   } else if (is(Type::character)) {
+      char ch = current().lexeme.at(0);
+      advance();
+      return std::make_unique<CharLiteral>(ch, line());
+   } else if (is(Type::string)) {
+      std::string string = current().lexeme;
+      advance();
+      return std::make_unique<StringLiteral>(string, line());
    } else if (is(Type::l_paren)) {
       advance();
       auto value = parse_expr();
@@ -210,7 +239,6 @@ Stmt Parser::parse_primary_expr() {
       return std::move(value);
    } else {
       fmt::raise("Expected primary expression, got '{}' instead at line {}.", type_str[int(current().type)], line());
-      return std::make_unique<NullLiteral>();
    }
 }
 

@@ -28,6 +28,7 @@ public:
 
    void declare_variable(const std::string& identifier, Value value, bool constant);
    void assign_variable(const std::string& identifier, Value value);
+   void delete_variable(const std::string& identifier);
    Value get_variable(const std::string& identifier);
    Environment& resolve_variable(const std::string& identifier);
 

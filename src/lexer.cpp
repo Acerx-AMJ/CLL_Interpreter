@@ -5,65 +5,58 @@ Lexer::Lexer(const std::string& code)
    : code(code) {}
 
 std::vector<Token>& Lexer::lex() {
-   tokens.clear();
-   line = 1;
-
-   for (auto it = code.cbegin(); it != code.cend(); ++it) {
-      if (isspace(*it)) {
-         line += (*it == '\n');
+   for (char ch = current(); index < code.size(); ch = advance()) {
+      if (isspace(ch)) {
+         line += (ch == '\n');
          continue;
       }
 
-      // Following two if-statements handle skipping comments
-      if (*it == '/' && it + 1 != code.cend() && *(it + 1) == '/') {
-         for (; it != code.cend() && *it != '\n'; ++it);
+      if (ch == '/' && peek() == '/') {
+         for (; index < code.size() && ch != '\n'; ch = advance());
          ++line;
-
-         if (it == code.cend()) {
-            return tokens;
-         }
-      } else if (*it == '/' && it + 1 != code.cend() && *(it + 1) == '*') {
+      } else if (ch == '/' && peek() == '*') {
          int original_line = line;
-         for (; it + 1 != code.cend() && (*it != '*' || *(it + 1) != '/'); ++it) {
-            if (*it == '\n') {
-               ++line;
-            }
+         for (; index < code.size() && (ch != '*' || peek() != '/'); ch = advance()) {
+            line += (ch == '\n');
          }
-         ++it;
-         fmt::raise_if(it == code.cend(), "Unterminated block comment at line {}.", original_line);
-      } else if (isdigit(*it)) {
+         advance();
+         fmt::raise_if(index >= code.size(), "Unterminated block comment at line {}.", original_line);
+      } else if (isdigit(ch)) {
          std::string number;
          bool dot = false, last_dash = false, prefix = false, scientific = false;
          bool bin = false, hex = false, oct = false;
 
-         if (*it == '0' && it + 1 != code.cend()) {
-            ++it;
-            bin = (*it == 'b' || *it == 'B');
-            hex = (*it == 'x' || *it == 'X');
-            oct = (*it == 'o' || *it == 'O');
+         if (ch == '0' && index + 1 < code.size()) {
+            ch = advance();
+            bin = (ch == 'b' || ch == 'B');
+            hex = (ch == 'x' || ch == 'X');
+            oct = (ch == 'o' || ch == 'O');
             prefix = bin || hex || oct;
-            it += prefix;
+
+            if (prefix) {
+               advance();
+            }
          }
 
-         for (; it != code.cend(); ++it) {
-            if (isdigit(*it) || (hex && ((*it <= 'f' && *it >= 'a') || (*it <= 'F' && *it >= 'A')))) {
+         for (; index < code.size(); ch = advance()) {
+            if (isdigit(ch) || (hex && ((tolower(ch) <= 'f' && tolower(ch) >= 'a')))) {
                last_dash = false;
-               number += *it;
-            } else if (*it == '.') {
+               number += ch;
+            } else if (ch == '.') {
                if (!dot) {
                   dot = true;
                   number += '.';
                } else break;
-            } else if (*it == 'e' || *it == 'E') {
+            } else if (ch == 'e' || ch == 'E') {
                fmt::raise_if(scientific, "Expected scientific number '{}' to only contain one 'e' at line {}.", number, line);
                fmt::raise_if(prefix, "Expected prefixed number '{}' to not be scientific at line {}.", number, line);
                scientific = true;
-               number += *it;
-            } else if (scientific && (*it == '-' || *it == '+') && (*(it - 1) == 'e' || *(it - 1) == 'E')) {
-               number += *it;
-            } else if (*it != '_') break;
+               number += ch;
+            } else if (scientific && (ch == '-' || ch == '+') && (code.at(index - 1) == 'e' || code.at(index - 1) == 'E')) {
+               number += ch;
+            } else if (ch != '_') break;
 
-            if (*it == '_' || ((*it == '-' || *it == '+') && (*(it - 1) != 'e' && *(it - 1) != 'E')) || *it == '.' || *it == 'e') {
+            if (ch == '_' || ((ch == '-' || ch == '+') && (code.at(index - 1) != 'e' && code.at(index - 1) != 'E')) || ch == '.' || ch == 'e') {
                fmt::raise_if(last_dash, "Expected number '{}' to not have two or more consecutive '_', 'e' or '.' at line {}.", number, line);
                last_dash = true;
             }
@@ -82,15 +75,16 @@ std::vector<Token>& Lexer::lex() {
          }
 
          tokens.push_back({Type::number, (number.empty() ? "0" : number), line});
-         --it;
-      } else if (isalpha(*it) || *it == '_') {
+         --index;
+      } else if (isalpha(ch) || ch == '_') {
          std::string string;
 
-         for (; it != code.cend(); ++it) {
-            if (!isalnum(*it) && *it != '_') {
+         for (; index < code.size(); ch = advance()) {
+            if (!isalnum(ch) && ch != '_') {
                break;
             }
-            string += *it;
+            line += (ch == '\n');
+            string += ch;
          }
 
          if (keywords.find(string) != keywords.end()) {
@@ -98,11 +92,32 @@ std::vector<Token>& Lexer::lex() {
          } else {
             tokens.push_back({Type::identifier, string, line});
          }
-         --it;
+         --index;
+      } else if (ch == '\'') {
+         char character = advance();
+
+         if (character == '\\') {
+            character = get_escape_code(advance());
+         }
+         ch = advance();
+         fmt::raise_if(ch != '\'', "Expected character to be one character long/unterminated character at line {}.", line);
+         tokens.push_back({Type::character, std::string(1, character), line});
+      } else if (ch == '"') {
+         std::string string;
+         int original_line = line;
+
+         for (ch = advance(); index < code.size() && ch != '"'; ch = advance()) {
+            if (ch == '\\') {
+               ch = get_escape_code(advance());
+            }
+            string += ch;
+         }
+         fmt::raise_if(ch != '"', "Unterminated string at line {}.", original_line);
+         tokens.push_back({Type::string, string, line});
       } else {
          std::string op;
-         for (int i = 0; i < max_op_size && it + i != code.cend(); ++i) {
-            op += *(it + i);
+         for (int i = 0; i < max_op_size && index + i < code.size(); ++i) {
+            op += code.at(index + i);
          }
          auto original_size = op.size();
 
@@ -113,14 +128,34 @@ std::vector<Token>& Lexer::lex() {
             }
             op.pop_back();
          }
-         fmt::raise_if(op.empty(), "Unexpected character: '{}' at line {}.", *it, line);
-         
-         it += op.size() - 1;
-         if (it == code.cend()) {
-            break;
-         }
+         fmt::raise_if(op.empty(), "Unexpected character: '{}' at line {}.", ch, line);  
+         index += op.size() - 1;
       }
    }
    tokens.push_back({Type::eof, "EOF", line});
    return tokens;
+}
+
+// Utility functions
+
+char Lexer::current() {
+   return (index >= code.size() ? 0 : code.at(index));
+}
+
+char Lexer::peek() {
+   return (index + 1 >= code.size() ? 0 : code.at(index + 1));
+}
+
+char Lexer::advance() {
+   ++index;
+   return current();
+}
+
+char Lexer::get_escape_code(char escape) {
+   static std::unordered_map<char, char> code_map {
+      {'a', '\a'}, {'b', '\b'}, {'t', '\t'}, {'n', '\n'}, {'v', '\v'}, {'f', '\f'},
+      {'r', '\r'}, {'e', '\e'}, {'\\', '\\'}, {'\'', '\''}, {'"', '"'}, {'0', '\0'}
+   };
+   fmt::raise_if(code_map.find(escape) == code_map.end(), "Unknown escape code '\\{}' at line {}.", escape, line);
+   return code_map[escape];
 }

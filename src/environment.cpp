@@ -21,6 +21,13 @@ void Environment::assign_variable(const std::string& identifier, Value value) {
    env.variables[identifier] = std::move(value);
 }
 
+void Environment::delete_variable(const std::string& identifier) {
+   auto& env = resolve_variable(identifier);
+   fmt::raise_if(env.constants.find(identifier) != env.constants.end(), "Cannot delete constant '{}'.", identifier);
+   fmt::raise_if(env.variables.find(identifier) == env.variables.end(), "Cannot delete variable '{}' as it does not exist in the given scope.", identifier);
+   env.variables.erase(identifier);
+}
+
 Value Environment::get_variable(const std::string& identifier) {
    auto& env = resolve_variable(identifier);
    return env.variables.at(identifier)->copy();
