@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace fmt {
    using namespace std::string_literals;
@@ -27,11 +28,23 @@ namespace fmt {
       std::string result = base;
 
       size_t pos = 0;
-      (( pos = result.find("{}"),
+      (( pos = result.find("{}", pos + 2),
          pos != std::string::npos
             ? result = result.replace(pos, 2, fmt::to_string(args))
             : result
       ), ...);
+      return result;
+   }
+
+   template<typename T>
+   std::string format_v(const char* base, const std::vector<T>& args = {}) {
+      std::string result = base;
+      size_t pos = 0;
+
+      for (const auto& arg : args) {
+         pos = result.find("{}", pos + 2);
+         result = (pos != std::string::npos ? result.replace(pos, 2, fmt::to_string(arg)) : result);
+      }
       return result;
    }
 
@@ -54,6 +67,31 @@ namespace fmt {
    template<typename... Args>
    void println(const Args&... args) {
       ((std::cout << std::boolalpha << args << ' '), ...);
+      std::cout << '\n';
+   }
+
+   template<typename T>
+   void printf_v(const char* base, const std::vector<T>& args = {}) {
+      std::cout << fmt::format_v(base, args);
+   }
+
+   template<typename T>
+   void printfln_v(const char* base, const std::vector<T>& args = {}) {
+      std::cout << fmt::format_v(base, args) << '\n';
+   }
+
+   template<typename T>
+   void print_v(const std::vector<T>& args = {}) {
+      for (const auto& arg : args) {
+         std::cout << std::boolalpha << arg << ' ';
+      }
+   }
+
+   template<typename T>
+   void println_v(std::vector<T>& args = {}) {
+      for (const auto& arg : args) {
+         std::cout << std::boolalpha << arg << ' ';
+      }
       std::cout << '\n';
    }
 

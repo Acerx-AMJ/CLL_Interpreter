@@ -21,8 +21,11 @@ public:
       auto env = std::make_unique<Environment>();
       env->declare_variable("null", std::make_unique<NullValue>(), true);
 
-      env->declare_function("print", print);
-      env->declare_function("println", println);
+      env->declare_function("print", fun::print);
+      env->declare_function("println", fun::println);
+      env->declare_function("printf", fun::printf);
+      env->declare_function("printfln", fun::printfln);
+      env->declare_function("format", fun::format);
       return env;
    }
 

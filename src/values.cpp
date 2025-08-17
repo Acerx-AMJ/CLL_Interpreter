@@ -15,6 +15,10 @@ void IdentifierValue::print() const {
    std::cout << "[" << identifier << "]";
 }
 
+std::string IdentifierValue::as_string() const {
+   return std::string("[") + identifier + "]";
+}
+
 Value IdentifierValue::copy() const {
    return std::make_unique<IdentifierValue>(identifier);
 }
@@ -36,6 +40,10 @@ NumberValue::NumberValue(long double number)
 
 void NumberValue::print() const {
    std::cout << number;
+}
+
+std::string NumberValue::as_string() const {
+   return std::to_string(number);
 }
 
 Value NumberValue::copy() const {
@@ -154,6 +162,10 @@ void CharValue::print() const {
    std::cout << ch;
 }
 
+std::string CharValue::as_string() const {
+   return std::string(1, ch);
+}
+
 Value CharValue::copy() const {
    return std::make_unique<CharValue>(ch);
 }
@@ -270,6 +282,10 @@ void StringValue::print() const {
    std::cout << string;
 }
 
+std::string StringValue::as_string() const {
+   return string;
+}
+
 Value StringValue::copy() const {
    return std::make_unique<StringValue>(string);
 }
@@ -346,6 +362,10 @@ NullValue::NullValue()
 
 void NullValue::print() const {
    std::cout << "NULL";
+}
+
+std::string NullValue::as_string() const {
+   return "NULL";
 }
  
 Value NullValue::copy() const {
