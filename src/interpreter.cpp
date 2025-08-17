@@ -1,65 +1,75 @@
 #include "interpreter.hpp"
 #include "fmt.hpp"
 
-Interpreter::Interpreter(Program& program, std::unique_ptr<Environment>& environment)
+Interpreter::Interpreter(Program& program, Environment& environment)
    : program(program), environment(environment) {}
 
-void Interpreter::evaluate() {
+Value Interpreter::evaluate() {
+   Value last;
    for (auto& ast : program.statements) {
-      evaluate_stmt(std::move(ast));
+      last = evaluate_stmt(std::move(ast));
    }
+   return std::move(last);
 }
 
 // Evaluate statement functions
 
-void Interpreter::evaluate_stmt(Stmt stmt) {
+Value Interpreter::evaluate_stmt(Stmt stmt) {
    switch (stmt->type) {
    case StmtType::var_decl:
-      evaluate_var_decl(std::move(stmt));
-      break;
+      return evaluate_var_decl(std::move(stmt));
    case StmtType::del:
-      evaluate_del_stmt(std::move(stmt));
-      break;
+      return evaluate_del_stmt(std::move(stmt));
+   case StmtType::program:
+      return evaluate_scope(std::move(stmt));
    default:
-      evaluate_expr(std::move(stmt));
-      break;
+      return evaluate_expr(std::move(stmt));
    }
 }
 
-void Interpreter::evaluate_var_decl(Stmt stmt) {
+Value Interpreter::evaluate_var_decl(Stmt stmt) {
    auto& decl = static_cast<VarDeclaration&>(*stmt.get());
    size_t isize = decl.identifiers.size(), vsize = decl.values.size();
    Value first = (vsize != 1 ? std::make_unique<NullValue>() : evaluate_expr(decl.values.at(0)->copy()));
 
    for (int i = 0; i < isize; ++i) {
       Value value = (vsize != isize && i >= vsize ? std::move(first->copy()) : std::move(evaluate_expr(std::move(decl.values.at(i)))));
-      environment->declare_variable(static_cast<IdentLiteral&>(*decl.identifiers.at(i).get()).identifier, std::move(value), decl.constant);
+      environment.declare_variable(static_cast<IdentLiteral&>(*decl.identifiers.at(i).get()).identifier, std::move(value), decl.constant);
    }
+   return std::make_unique<NullValue>();
 }
 
-void Interpreter::evaluate_del_stmt(Stmt stmt) {
+Value Interpreter::evaluate_del_stmt(Stmt stmt) {
    auto& del = static_cast<DeleteStmt&>(*stmt.get());
    for (const auto& identifier : del.identifiers) {
-      environment->delete_variable(static_cast<IdentLiteral&>(*identifier.get()).identifier);
+      environment.delete_variable(static_cast<IdentLiteral&>(*identifier.get()).identifier);
    }
+   return std::make_unique<NullValue>();
+}
+
+Value Interpreter::evaluate_scope(Stmt expr) {
+   auto& program = static_cast<Program&>(*expr.get());
+   Environment env (&environment);
+   Interpreter interpreter (program, env);
+   return interpreter.evaluate();
 }
 
 // Evaluate expression functions
 
-Value Interpreter::evaluate_expr(Stmt stmt) {
-   switch (stmt->type) {
+Value Interpreter::evaluate_expr(Stmt expr) {
+   switch (expr->type) {
    case StmtType::args:
       fmt::raise("Unexpected argument list while evaluating.");
    case StmtType::assignment:
-      return evaluate_assignment(std::move(stmt));
+      return evaluate_assignment(std::move(expr));
    case StmtType::binary:
-      return evaluate_binary_expr(std::move(stmt));
+      return evaluate_binary_expr(std::move(expr));
    case StmtType::call:
-      return evaluate_call_expr(std::move(stmt));
+      return evaluate_call_expr(std::move(expr));
    case StmtType::unary:
-      return evaluate_unary_expr(std::move(stmt));
+      return evaluate_unary_expr(std::move(expr));
    default:
-      return evaluate_primary_expr(std::move(stmt));
+      return evaluate_primary_expr(std::move(expr));
    }
 }
 
@@ -115,28 +125,28 @@ Value Interpreter::evaluate_assignment(Stmt expr) {
    case Type::equals:
       break;
    case Type::plus_equals:
-      value = environment->get_variable(identifier)->add(value);
+      value = environment.get_variable(identifier)->add(value);
       break;
    case Type::minus_equals:
-      value = environment->get_variable(identifier)->subtract(value);
+      value = environment.get_variable(identifier)->subtract(value);
       break;
    case Type::multiply_equals:
-      value = environment->get_variable(identifier)->multiply(value);
+      value = environment.get_variable(identifier)->multiply(value);
       break;
    case Type::divide_equals:
-      value = environment->get_variable(identifier)->divide(value);
+      value = environment.get_variable(identifier)->divide(value);
       break;
    case Type::remainder_equals:
-      value = environment->get_variable(identifier)->remainder(value);
+      value = environment.get_variable(identifier)->remainder(value);
       break;
    case Type::exponentiate_equals:
-      value = environment->get_variable(identifier)->exponentiate(value);
+      value = environment.get_variable(identifier)->exponentiate(value);
       break;
    default:
       fmt::raise("Unsupported assignment command '{}'.", type_str[int(assignment.op)]);
    };
 
-   environment->assign_variable(identifier, value->copy());
+   environment.assign_variable(identifier, value->copy());
    return std::move(value);
 }
 
@@ -146,7 +156,7 @@ Value Interpreter::evaluate_call_expr(Stmt expr) {
    for (auto& arg : static_cast<ArgsListExpr&>(*call.args.get()).args)
       args.push_back(std::move(evaluate_expr(std::move(arg))));
 
-   return std::move(environment->call_function(static_cast<IdentLiteral&>(*call.identifier.get()).identifier, args));
+   return std::move(environment.call_function(static_cast<IdentLiteral&>(*call.identifier.get()).identifier, args));
 }
 
 Value Interpreter::evaluate_primary_expr(Stmt expr) {
@@ -154,7 +164,7 @@ Value Interpreter::evaluate_primary_expr(Stmt expr) {
    case StmtType::identifier: {
       Value ident = std::make_unique<IdentifierValue>(static_cast<IdentLiteral&>(*expr.get()).identifier);
       while (ident->type == ValueType::identifier) {
-         ident = std::move(environment->get_variable(static_cast<IdentifierValue&>(*ident.get()).identifier));
+         ident = std::move(environment.get_variable(static_cast<IdentifierValue&>(*ident.get()).identifier));
       }
       return std::move(ident);
    }
@@ -166,6 +176,8 @@ Value Interpreter::evaluate_primary_expr(Stmt expr) {
       return std::make_unique<StringValue>(static_cast<StringLiteral&>(*expr.get()).string);
    case StmtType::null:
       return std::make_unique<NullValue>();
+   case StmtType::program:
+      return evaluate_scope(std::move(expr));
    default:
       fmt::raise("Unexpected expression while evaluating.");
    }

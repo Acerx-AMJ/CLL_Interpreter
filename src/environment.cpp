@@ -1,11 +1,22 @@
 #include "environment.hpp"
-#include "fmt.hpp"
 
-Environment::Environment(std::optional<std::unique_ptr<Environment>>& parent)
-   : parent(std::move(parent)) {}
+#include "fmt.hpp"
+#include "functions.hpp"
+
+Environment::Environment(Environment* parent)
+   : parent(parent) {}
 
 Environment::Environment()
-   : parent(std::nullopt) {}
+   : parent(nullptr)
+{
+   declare_variable("null", std::make_unique<NullValue>(), true);
+
+   declare_function("print", fun::print);
+   declare_function("println", fun::println);
+   declare_function("printf", fun::printf);
+   declare_function("printfln", fun::printfln);
+   declare_function("format", fun::format);
+}
 
 void Environment::declare_variable(const std::string& identifier, Value value, bool constant) {
    fmt::raise_if(constants.find(identifier) != constants.end(), "Cannot shadow constant variable '{}'.", identifier);
@@ -37,8 +48,8 @@ Environment& Environment::resolve_variable(const std::string& identifier) {
    if (variables.find(identifier) != variables.end())
       return *this;
    
-   fmt::raise_if(!parent.has_value(), "Variable '{}' does not exist in the given scope.", identifier);
-   return parent->get()->resolve_variable(identifier);
+   fmt::raise_if(!parent, "Variable '{}' does not exist in the given scope.", identifier);
+   return parent->resolve_variable(identifier);
 }
 
 void Environment::declare_function(const std::string& identifier, const std::function<Value(const std::vector<Value>&)>& function) {
@@ -55,6 +66,6 @@ Environment& Environment::resolve_function(const std::string& identifier) {
    if (functions.find(identifier) != functions.end())
       return *this;
    
-   fmt::raise_if(!parent.has_value(), "Function '{}' does not exist in the given scope.", identifier);
-   return parent->get()->resolve_function(identifier);
+   fmt::raise_if(!parent, "Function '{}' does not exist in the given scope.", identifier);
+   return parent->resolve_function(identifier);
 }

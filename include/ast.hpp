@@ -6,12 +6,13 @@
 #include <vector>
 
 enum class StmtType : char {
-   var_decl, del, assignment, binary, unary, call, args, identifier, number, character, string, null
+   var_decl, del, assignment, binary, unary, call, args, identifier, number, character, string, null, program
 };
 
 constexpr std::string_view stmt_type_str[] {
    "VariableDeclaration", "DeleteStatement", "AssignmentExpression", "BinaryExpression", "UnaryExpression",
-   "CallExpression", "ArgumentListExpression", "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "NullLiteral"
+   "CallExpression", "ArgumentListExpression", "IdentifierLiteral", "NumberLiteral", "CharacterLiteral",
+   "StringLiteral", "NullLiteral", "Program"
 };
 
 struct Statement;
@@ -124,14 +125,17 @@ struct StringLiteral : public Statement {
 };
 
 struct NullLiteral : public Statement {
-   NullLiteral(int line = -1);
+   NullLiteral(int line = 0);
    void print(int indentation) const override;
    Stmt copy() const override;
 };
 
-struct Program {
+struct Program : public Statement {
    std::vector<Stmt> statements;
-   void print() const;
+
+   Program(int line = 0);
+   void print(int indentation) const override;
+   Stmt copy() const override;
 };
 
 #endif

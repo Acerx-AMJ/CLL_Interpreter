@@ -1,33 +1,20 @@
 #ifndef ENVIRONMENT_HPP
 #define ENVIRONMENT_HPP
 
-#include "functions.hpp"
+#include "values.hpp"
 #include <functional>
-#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 
 class Environment {
-   std::optional<std::unique_ptr<Environment>> parent;
+   Environment* parent;
    std::unordered_map<std::string, std::function<Value(const std::vector<Value>&)>> functions;
    std::unordered_map<std::string, Value> variables;
    std::unordered_set<std::string> constants;
 
 public:
-   Environment(std::optional<std::unique_ptr<Environment>>& parent);
+   Environment(Environment* parent);
    Environment();
-
-   static std::unique_ptr<Environment> create_global() {
-      auto env = std::make_unique<Environment>();
-      env->declare_variable("null", std::make_unique<NullValue>(), true);
-
-      env->declare_function("print", fun::print);
-      env->declare_function("println", fun::println);
-      env->declare_function("printf", fun::printf);
-      env->declare_function("printfln", fun::printfln);
-      env->declare_function("format", fun::format);
-      return env;
-   }
 
    void declare_variable(const std::string& identifier, Value value, bool constant);
    void assign_variable(const std::string& identifier, Value value);

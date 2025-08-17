@@ -12,7 +12,7 @@ enum class Type : char {
    increment, decrement, equals,
    plus_equals, minus_equals, multiply_equals, divide_equals, remainder_equals, exponentiate_equals,
    plus, minus, multiply, divide, remainder, exponentiate,
-   l_paren, r_paren, comma
+   l_paren, r_paren, l_brace, r_brace, comma
 };
 
 constexpr std::string_view type_str[] {
@@ -20,7 +20,7 @@ constexpr std::string_view type_str[] {
    "++", "--", "=",
    "+=", "-=", "*=", "/=", "%=", "**=",
    "+", "-", "*", "/", "%", "**",
-   "(", ")", ","
+   "(", ")", "{", "}", ","
 };
 
 struct Token {
@@ -34,7 +34,7 @@ static std::unordered_map<std::string_view, Type> operators {
    {"++", Type::increment}, {"--", Type::decrement}, {"=", Type::equals},
    {"+=", Type::plus_equals}, {"-=", Type::minus_equals}, {"*=", Type::multiply_equals}, {"/=", Type::divide_equals}, {"%=", Type::remainder_equals}, {"**=", Type::exponentiate_equals},
    {"+", Type::plus}, {"-", Type::minus}, {"*", Type::multiply}, {"/", Type::divide}, {"%", Type::remainder}, {"**", Type::exponentiate},
-   {"(", Type::l_paren}, {")", Type::r_paren}, {",", Type::comma}
+   {"(", Type::l_paren}, {")", Type::r_paren}, {"{", Type::l_brace}, {"}", Type::r_brace}, {",", Type::comma}
 };
 
 static std::unordered_set<std::string> keywords {

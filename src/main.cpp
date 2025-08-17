@@ -23,8 +23,8 @@ int main(int argc, char* argv[]) {
    auto& program = parser.parse();
    // program.print();
 
-   std::unique_ptr<Environment> env = Environment::create_global();
-   Interpreter interpreter (program, env);
+   Environment global;
+   Interpreter interpreter (program, global);
    interpreter.evaluate();
    return 0;
 }

@@ -237,6 +237,17 @@ Stmt Parser::parse_primary_expr() {
       fmt::raise_if(!is(Type::r_paren), "Expected to find a matching parenthesis after '(', got '{}' instead at line {}.", type_str[int(current().type)], line());
       advance();
       return std::move(value);
+   } else if (is(Type::l_brace)) {
+      advance();
+      auto program = std::make_unique<Program>(line());
+
+      while (!is(Type::eof) && !is(Type::r_brace)) {
+         auto stmt = parse_stmt();
+         program->statements.push_back(std::move(stmt));
+      }
+      fmt::raise_if(!is(Type::r_brace), "Unterminated scope at line {}.", program->line);
+      advance();
+      return program;
    } else {
       fmt::raise("Expected primary expression, got '{}' instead at line {}.", type_str[int(current().type)], line());
    }

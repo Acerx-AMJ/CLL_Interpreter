@@ -178,8 +178,20 @@ Stmt NullLiteral::copy() const {
    return std::make_unique<NullLiteral>(line);
 }
 
-void Program::print() const {
+Program::Program(int line)
+   : Statement(StmtType::program, line) {}
+
+void Program::print(int indentation) const {
+   std::cout << std::string(indentation, ' ') << "Scope:\n";
    for (const auto& stmt : statements) {
-      stmt->print(0);
+      stmt->print(indentation + 2);
    }
+}
+
+Stmt Program::copy() const {
+   auto copied = std::make_unique<Program>(line);
+   for (const auto& statement : statements) {
+      copied->statements.push_back(statement->copy());
+   }
+   return std::move(copied);
 }
