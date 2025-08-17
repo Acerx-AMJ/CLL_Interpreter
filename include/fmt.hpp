@@ -28,7 +28,7 @@ namespace fmt {
       std::string result = base;
 
       size_t pos = 0;
-      (( pos = result.find("{}", pos + 2),
+      (( pos = result.find("{}", pos),
          pos != std::string::npos
             ? result = result.replace(pos, 2, fmt::to_string(args))
             : result
@@ -42,7 +42,7 @@ namespace fmt {
       size_t pos = 0;
 
       for (const auto& arg : args) {
-         pos = result.find("{}", pos + 2);
+         pos = result.find("{}", pos);
          result = (pos != std::string::npos ? result.replace(pos, 2, fmt::to_string(arg)) : result);
       }
       return result;

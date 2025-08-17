@@ -6,7 +6,7 @@
 ValueLiteral::ValueLiteral(ValueType type)
    : type(type) {}
 
-// Identifier value
+// Identifier value. Identifiers should never be converted or be operated on
 
 IdentifierValue::IdentifierValue(const std::string& identifier)
    : identifier(identifier), ValueLiteral(ValueType::identifier) {}
@@ -17,6 +17,14 @@ void IdentifierValue::print() const {
 
 std::string IdentifierValue::as_string() const {
    return std::string("[") + identifier + "]";
+}
+
+long double IdentifierValue::as_number() const {
+   fmt::raise("Cannot convert 'Identifier' to 'Number'.");
+}
+
+char IdentifierValue::as_char() const {
+   fmt::raise("Cannot convert 'Identifier' to 'Character'.");
 }
 
 Value IdentifierValue::copy() const {
@@ -39,11 +47,20 @@ NumberValue::NumberValue(long double number)
    : number(number), ValueLiteral(ValueType::number) {}
 
 void NumberValue::print() const {
-   std::cout << number;
+   std::cout << as_string();
 }
 
 std::string NumberValue::as_string() const {
-   return std::to_string(number);
+   std::string str = std::to_string(number);
+   return str.substr(0, str.size() - (number == floor(number) ? 7 : 4));
+}
+
+long double NumberValue::as_number() const {
+   return number;
+}
+
+char NumberValue::as_char() const {
+   return number;
 }
 
 Value NumberValue::copy() const {
@@ -65,26 +82,17 @@ Value NumberValue::decrement() {
 }
 
 Value NumberValue::add(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto other_number = static_cast<NumberValue&>(*other.get()).number;
-      return std::make_unique<NumberValue>(number + other_number);
-   } else if (other->type == ValueType::character) {
-      auto ch = static_cast<CharValue&>(*other.get()).ch;
-      return std::make_unique<NumberValue>(number + ch);
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      return std::make_unique<NumberValue>(number + other->as_number());
    } else if (other->type == ValueType::string) {
-      auto str = static_cast<StringValue&>(*other.get()).string;
-      return std::make_unique<StringValue>(std::to_string(number) + str);
+      return std::make_unique<StringValue>(std::to_string(number) + other->as_string());
    }
    return std::make_unique<NullValue>();
 }
 
 Value NumberValue::subtract(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto other_number = static_cast<NumberValue&>(*other.get()).number;
-      return std::make_unique<NumberValue>(number - other_number);
-   } else if (other->type == ValueType::character) {
-      auto ch = static_cast<CharValue&>(*other.get()).ch;
-      return std::make_unique<NumberValue>(number - ch);
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      return std::make_unique<NumberValue>(number - other->as_number());
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Number' - 'String'.");
    }
@@ -92,14 +100,10 @@ Value NumberValue::subtract(Value& other) const {
 }
 
 Value NumberValue::multiply(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto other_number = static_cast<NumberValue&>(*other.get()).number;
-      return std::make_unique<NumberValue>(number * other_number);
-   } else if (other->type == ValueType::character) {
-      auto ch = static_cast<CharValue&>(*other.get()).ch;
-      return std::make_unique<NumberValue>(number * ch);
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      return std::make_unique<NumberValue>(number * other->as_number());
    } else if (other->type == ValueType::string) {
-      auto str = static_cast<StringValue&>(*other.get()).string;
+      auto str = other->as_string();
       std::string final;
 
       for (int i = 0; i < number; ++i) {
@@ -111,14 +115,9 @@ Value NumberValue::multiply(Value& other) const {
 }
 
 Value NumberValue::divide(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto other_number = static_cast<NumberValue&>(*other.get()).number;
-      fmt::raise_if(other_number == 0, "Tried to divide {} by zero.", number);
-      return std::make_unique<NumberValue>(number / other_number);
-   } else if (other->type == ValueType::character) {
-      auto ch = static_cast<CharValue&>(*other.get()).ch;
-      fmt::raise_if(ch == 0, "Tried to divide {} by zero.", number);
-      return std::make_unique<NumberValue>(number / ch);
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      fmt::raise_if(other->as_number() == 0, "Tried to divide {} by zero.", number);
+      return std::make_unique<NumberValue>(number / other->as_number());
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Number' / 'String'.");
    }
@@ -126,14 +125,10 @@ Value NumberValue::divide(Value& other) const {
 }
 
 Value NumberValue::remainder(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto other_number = static_cast<long long>(static_cast<NumberValue&>(*other.get()).number);
-      fmt::raise_if(other_number == 0, "Tried to divide {} by zero.", number);
-      return std::make_unique<NumberValue>(static_cast<long long>(number) % other_number);
-   } else if (other->type == ValueType::character) {
-      auto ch = static_cast<CharValue&>(*other.get()).ch;
-      fmt::raise_if(ch == 0, "Tried to divide {} by zero.", number);
-      return std::make_unique<NumberValue>(static_cast<long long>(number) % ch);
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      auto other_num = static_cast<long long>(other->as_number());
+      fmt::raise_if(other_num == 0, "Tried to divide {} by zero.", number);
+      return std::make_unique<NumberValue>(static_cast<long long>(number) % other_num);
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Number' % 'String'.");
    }
@@ -141,12 +136,8 @@ Value NumberValue::remainder(Value& other) const {
 }
 
 Value NumberValue::exponentiate(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto other_number = static_cast<NumberValue&>(*other.get()).number;
-      return std::make_unique<NumberValue>(std::pow(number, other_number));
-   } else if (other->type == ValueType::character) {
-      auto ch = static_cast<CharValue&>(*other.get()).ch;
-      return std::make_unique<NumberValue>(std::pow(number, ch));
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      return std::make_unique<NumberValue>(std::pow(number, other->as_number()));
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Number' ** 'String'.");
    }
@@ -164,6 +155,14 @@ void CharValue::print() const {
 
 std::string CharValue::as_string() const {
    return std::string(1, ch);
+}
+
+long double CharValue::as_number() const {
+   return ch;
+}
+
+char CharValue::as_char() const {
+   return ch;
 }
 
 Value CharValue::copy() const {
@@ -185,41 +184,28 @@ Value CharValue::decrement() {
 }
 
 Value CharValue::add(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto number = static_cast<NumberValue&>(*other.get()).number;
-      return std::make_unique<CharValue>(ch + number);
-   } else if (other->type == ValueType::character) {
-      auto other_ch = static_cast<CharValue&>(*other.get()).ch;
-      return std::make_unique<CharValue>(ch + other_ch);
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      return std::make_unique<CharValue>(ch + other->as_number());
    } else if (other->type == ValueType::string) {
-      auto str = static_cast<StringValue&>(*other.get()).string;
-      return std::make_unique<StringValue>(std::string(1, ch) + str);
+      return std::make_unique<StringValue>(as_string() + other->as_string());
    }
    return std::make_unique<NullValue>();
 }
 
 Value CharValue::subtract(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto number = static_cast<NumberValue&>(*other.get()).number;
-      return std::make_unique<CharValue>(ch - number);
-   } else if (other->type == ValueType::character) {
-      auto other_ch = static_cast<CharValue&>(*other.get()).ch;
-      return std::make_unique<CharValue>(ch - other_ch);
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      return std::make_unique<CharValue>(ch - other->as_number());
    } else if (other->type == ValueType::string) {
-      fmt::raise("Invalid binary operation: 'Char' - 'String'.");
+      fmt::raise("Invalid binary operation: 'Character' - 'String'.");
    }
    return std::make_unique<NullValue>();
 }
 
 Value CharValue::multiply(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto number = static_cast<NumberValue&>(*other.get()).number;
-      return std::make_unique<CharValue>(ch * number);
-   } else if (other->type == ValueType::character) {
-      auto other_ch = static_cast<CharValue&>(*other.get()).ch;
-      return std::make_unique<CharValue>(ch * other_ch);
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      return std::make_unique<CharValue>(ch * other->as_number());
    } else if (other->type == ValueType::string) {
-      auto str = static_cast<StringValue&>(*other.get()).string;
+      auto str = other->as_string();
       std::string final;
 
       for (int i = 0; i < ch; ++i) {
@@ -231,44 +217,31 @@ Value CharValue::multiply(Value& other) const {
 }
 
 Value CharValue::divide(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto number = static_cast<NumberValue&>(*other.get()).number;
-      fmt::raise_if(number == 0, "Tried to divide {} by zero.", ch);
-      return std::make_unique<CharValue>(ch / number);
-   } else if (other->type == ValueType::character) {
-      auto other_ch = static_cast<CharValue&>(*other.get()).ch;
-      fmt::raise_if(other_ch == 0, "Tried to divide {} by zero.", ch);
-      return std::make_unique<CharValue>(ch / other_ch);
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      fmt::raise_if(other->as_number() == 0, "Tried to divide {} by zero.", ch);
+      return std::make_unique<CharValue>(ch / other->as_number());
    } else if (other->type == ValueType::string) {
-      fmt::raise("Invalid binary operation: 'Char' / 'String'.");
+      fmt::raise("Invalid binary operation: 'Character' / 'String'.");
    }
    return std::make_unique<NullValue>();
 }
 
 Value CharValue::remainder(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto number = static_cast<long long>(static_cast<NumberValue&>(*other.get()).number);
-      fmt::raise_if(number == 0, "Tried to divide {} by zero.", ch);
-      return std::make_unique<CharValue>(ch % number);
-   } else if (other->type == ValueType::character) {
-      auto other_ch = static_cast<CharValue&>(*other.get()).ch;
-      fmt::raise_if(other_ch == 0, "Tried to divide {} by zero.", ch);
-      return std::make_unique<CharValue>(ch % other_ch);
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      auto other_num = static_cast<long long>(other->as_number());
+      fmt::raise_if(other_num == 0, "Tried to divide {} by zero.", ch);
+      return std::make_unique<CharValue>(ch % other_num);
    } else if (other->type == ValueType::string) {
-      fmt::raise("Invalid binary operation: 'Char' % 'String'.");
+      fmt::raise("Invalid binary operation: 'Character' % 'String'.");
    }
    return std::make_unique<NullValue>();
 }
 
 Value CharValue::exponentiate(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto number = static_cast<NumberValue&>(*other.get()).number;
-      return std::make_unique<CharValue>(std::pow(ch, number));
-   } else if (other->type == ValueType::character) {
-      auto other_ch = static_cast<CharValue&>(*other.get()).ch;
-      return std::make_unique<CharValue>(std::pow(ch, other_ch));
+   if (other->type == ValueType::number || other->type == ValueType::character) {
+      return std::make_unique<CharValue>(std::pow(ch, other->as_number()));
    } else if (other->type == ValueType::string) {
-      fmt::raise("Invalid binary operation: 'Char' ** 'String'.");
+      fmt::raise("Invalid binary operation: 'Character' ** 'String'.");
    }
    return std::make_unique<NullValue>();
 }
@@ -284,6 +257,19 @@ void StringValue::print() const {
 
 std::string StringValue::as_string() const {
    return string;
+}
+
+long double StringValue::as_number() const {
+   try {
+      return std::stold(string);
+   } catch (...) {
+      fmt::raise("Could not convert string '{}' to a number.", string);
+   }
+}
+
+char StringValue::as_char() const {
+   fmt::raise_if(string.size() > 1, "Could not convert string '{}' to a character as it has too many characters.", string);
+   return (string.empty() ? 0 : string.at(0));
 }
 
 Value StringValue::copy() const {
@@ -303,17 +289,10 @@ Value StringValue::decrement() {
 }
 
 Value StringValue::add(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto number = static_cast<NumberValue&>(*other.get()).number;
-      return std::make_unique<StringValue>(string + std::to_string(number));
-   } else if (other->type == ValueType::character) {
-      auto ch = static_cast<CharValue&>(*other.get()).ch;
-      return std::make_unique<StringValue>(string + ch);
-   } else if (other->type == ValueType::string) {
-      auto other_str = static_cast<StringValue&>(*other.get()).string;
-      return std::make_unique<StringValue>(string + other_str);
+   if (other->type == ValueType::null) {
+      return std::make_unique<NullValue>();
    }
-   return std::make_unique<NullValue>();
+   return std::make_unique<StringValue>(string + other->as_string());
 }
 
 Value StringValue::subtract(Value& other) const {
@@ -321,19 +300,10 @@ Value StringValue::subtract(Value& other) const {
 }
 
 Value StringValue::multiply(Value& other) const {
-   if (other->type == ValueType::number) {
-      auto number = static_cast<NumberValue&>(*other.get()).number;
+   if (other->type == ValueType::number || other->type == ValueType::character) {
       std::string final;
 
-      for (int i = 0; i < number; ++i) {
-         final += string;
-      }
-      return std::make_unique<StringValue>(final);
-   } else if (other->type == ValueType::character) {
-      auto ch = static_cast<CharValue&>(*other.get()).ch;
-      std::string final;
-
-      for (int i = 0; i < ch; ++i) {
+      for (int i = 0; i < other->as_number(); ++i) {
          final += string;
       }
       return std::make_unique<StringValue>(final);
@@ -366,6 +336,14 @@ void NullValue::print() const {
 
 std::string NullValue::as_string() const {
    return "NULL";
+}
+
+long double NullValue::as_number() const {
+   return 0;
+}
+
+char NullValue::as_char() const {
+   return 0;
 }
  
 Value NullValue::copy() const {

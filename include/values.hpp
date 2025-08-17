@@ -22,6 +22,8 @@ struct ValueLiteral {
    virtual ~ValueLiteral() = default;
    virtual void print() const = 0;
    virtual std::string as_string() const = 0;
+   virtual long double as_number() const = 0;
+   virtual char as_char() const = 0;
 
    virtual Value copy() const = 0;
    virtual Value negate() const = 0;
@@ -41,6 +43,8 @@ struct IdentifierValue : public ValueLiteral {
    IdentifierValue(const std::string& identifier);
    void print() const override;
    std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
 
    Value copy() const override;
    Value negate() const override;
@@ -60,6 +64,8 @@ struct NumberValue : public ValueLiteral {
    NumberValue(long double number);
    void print() const override;
    std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
 
    Value copy() const override;
    Value negate() const override;
@@ -79,6 +85,8 @@ struct CharValue : public ValueLiteral {
    CharValue(char ch);
    void print() const override;
    std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
 
    Value copy() const override;
    Value negate() const override;
@@ -98,6 +106,8 @@ struct StringValue : public ValueLiteral {
    StringValue(const std::string& string);
    void print() const override;
    std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
 
    Value copy() const override;
    Value negate() const override;
@@ -115,6 +125,8 @@ struct NullValue : public ValueLiteral {
    NullValue();
    void print() const override;
    std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
 
    Value copy() const override;
    Value negate() const override;

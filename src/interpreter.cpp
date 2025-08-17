@@ -30,10 +30,12 @@ Value Interpreter::evaluate_stmt(Stmt stmt) {
 Value Interpreter::evaluate_var_decl(Stmt stmt) {
    auto& decl = static_cast<VarDeclaration&>(*stmt.get());
    size_t isize = decl.identifiers.size(), vsize = decl.values.size();
-   Value first = (vsize != 1 ? std::make_unique<NullValue>() : evaluate_expr(decl.values.at(0)->copy()));
+   
+   bool single_decl = (vsize == 1 && isize != 1);
+   Value first (single_decl ? evaluate_expr(decl.values.at(0)->copy()) : std::make_unique<NullValue>());
 
    for (int i = 0; i < isize; ++i) {
-      Value value = (vsize != isize && i >= vsize ? std::move(first->copy()) : std::move(evaluate_expr(std::move(decl.values.at(i)))));
+      Value value = (single_decl || (vsize != isize && i >= vsize) ? first->copy() : evaluate_expr(std::move(decl.values.at(i))));
       environment.declare_variable(static_cast<IdentLiteral&>(*decl.identifiers.at(i).get()).identifier, std::move(value), decl.constant);
    }
    return std::make_unique<NullValue>();

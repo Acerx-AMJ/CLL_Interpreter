@@ -16,6 +16,14 @@ Environment::Environment()
    declare_function("printf", fun::printf);
    declare_function("printfln", fun::printfln);
    declare_function("format", fun::format);
+
+   declare_function("input", fun::input);
+   declare_function("inputnum", fun::inputnum);
+   declare_function("inputch", fun::inputch);
+
+   declare_function("string", fun::string);
+   declare_function("number", fun::number);
+   declare_function("char", fun::char_);
 }
 
 void Environment::declare_variable(const std::string& identifier, Value value, bool constant) {
