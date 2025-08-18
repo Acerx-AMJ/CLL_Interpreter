@@ -18,6 +18,7 @@ namespace fun {
    Value string(const std::vector<Value>& args);
    Value number(const std::vector<Value>& args);
    Value char_(const std::vector<Value>& args);
+   Value bool_(const std::vector<Value>& args);
 }
 
 #endif

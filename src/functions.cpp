@@ -87,6 +87,8 @@ namespace fun {
       }
       char user_input = 0;
       std::cin >> std::noskipws >> user_input;
+      std::cin.clear();
+      std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
       return std::make_unique<CharValue>(user_input);
    }
 
@@ -105,5 +107,10 @@ namespace fun {
    Value char_(const std::vector<Value>& args) {
       fmt::raise_if(args.size() > 1, "'char': Expected no arguments or a single argument.");
       return std::make_unique<CharValue>((args.empty() ? 0 : args.at(0)->as_char()));
+   }
+
+   Value bool_(const std::vector<Value>& args) {
+      fmt::raise_if(args.size() > 1, "'bool': Expected no arguments or a single argument.");
+      return std::make_unique<BoolValue>((args.empty() ? false : args.at(0)->as_bool()));
    }
 }

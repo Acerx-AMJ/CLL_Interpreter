@@ -10,6 +10,8 @@ Environment::Environment()
    : parent(nullptr)
 {
    declare_variable("null", std::make_unique<NullValue>(), true);
+   declare_variable("true", std::make_unique<BoolValue>(true), true);
+   declare_variable("false", std::make_unique<BoolValue>(false), true);
 
    declare_function("print", fun::print);
    declare_function("println", fun::println);
@@ -24,6 +26,7 @@ Environment::Environment()
    declare_function("string", fun::string);
    declare_function("number", fun::number);
    declare_function("char", fun::char_);
+   declare_function("bool", fun::bool_);
 }
 
 void Environment::declare_variable(const std::string& identifier, Value value, bool constant) {

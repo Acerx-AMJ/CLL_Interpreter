@@ -14,7 +14,7 @@ void VarDeclaration::print(int indentation) const {
       identifiers.at(i)->print(indentation);
 
       if (values.size() != 1 && i >= values.size()) {
-         std::cout << std::string(indentation + 2, ' ') << "NULL\n";
+         std::cout << std::string(indentation + 2, ' ') << "null\n";
       } else {
          values.at(std::min(i, values.size() - 1))->print(indentation + 2);
       }
@@ -171,7 +171,7 @@ NullLiteral::NullLiteral(int line)
    : Statement(StmtType::null, line) {}
 
 void NullLiteral::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "NULL\n";
+   std::cout << std::string(indentation, ' ') << "null\n";
 }
 
 Stmt NullLiteral::copy() const {

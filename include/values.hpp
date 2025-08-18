@@ -5,11 +5,11 @@
 #include <string>
 
 enum class ValueType : char {
-   identifier, number, character, string, null
+   identifier, number, character, string, boolean, null
 };
 
 constexpr std::string_view value_type_str[] {
-   "Identifier", "Number", "Character", "String", "Null"   
+   "Identifier", "Number", "Character", "String", "Boolean", "Null"   
 };
 
 struct ValueLiteral;
@@ -24,6 +24,7 @@ struct ValueLiteral {
    virtual std::string as_string() const = 0;
    virtual long double as_number() const = 0;
    virtual char as_char() const = 0;
+   virtual bool as_bool() const = 0;
 
    virtual Value copy() const = 0;
    virtual Value negate() const = 0;
@@ -45,6 +46,7 @@ struct IdentifierValue : public ValueLiteral {
    std::string as_string() const override;
    long double as_number() const override;
    char as_char() const override;
+   bool as_bool() const override;
 
    Value copy() const override;
    Value negate() const override;
@@ -66,6 +68,7 @@ struct NumberValue : public ValueLiteral {
    std::string as_string() const override;
    long double as_number() const override;
    char as_char() const override;
+   bool as_bool() const override;
 
    Value copy() const override;
    Value negate() const override;
@@ -87,6 +90,7 @@ struct CharValue : public ValueLiteral {
    std::string as_string() const override;
    long double as_number() const override;
    char as_char() const override;
+   bool as_bool() const override;
 
    Value copy() const override;
    Value negate() const override;
@@ -108,6 +112,29 @@ struct StringValue : public ValueLiteral {
    std::string as_string() const override;
    long double as_number() const override;
    char as_char() const override;
+   bool as_bool() const override;
+
+   Value copy() const override;
+   Value negate() const override;
+   Value increment() override;
+   Value decrement() override;
+   Value add(Value& other) const override;
+   Value subtract(Value& other) const override;
+   Value multiply(Value& other) const override;
+   Value divide(Value& other) const override;
+   Value remainder(Value& other) const override;
+   Value exponentiate(Value& other) const override;
+};
+
+struct BoolValue : public ValueLiteral {
+   bool value;
+
+   BoolValue(bool value);
+   void print() const override;
+   std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
+   bool as_bool() const override;
 
    Value copy() const override;
    Value negate() const override;
@@ -127,6 +154,7 @@ struct NullValue : public ValueLiteral {
    std::string as_string() const override;
    long double as_number() const override;
    char as_char() const override;
+   bool as_bool() const override;
 
    Value copy() const override;
    Value negate() const override;
