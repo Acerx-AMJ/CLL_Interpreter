@@ -14,40 +14,42 @@ ValueLiteral::ValueLiteral(ValueType type)
 
 // Identifier value. Identifiers should never be converted or be operated on
 
-IdentifierValue::IdentifierValue(const std::string& identifier)
+IdentValue::IdentValue(const std::string& identifier)
    : identifier(identifier), ValueLiteral(ValueType::identifier) {}
 
-void IdentifierValue::print() const {
+void IdentValue::print() const {
    std::cout << "[" << identifier << "]";
 }
 
-std::string IdentifierValue::as_string() const {
+std::string IdentValue::as_string() const {
    return std::string("[") + identifier + "]";
 }
 
-long double IdentifierValue::as_number() const {
+long double IdentValue::as_number() const {
    fmt::raise("Cannot convert 'Identifier' to 'Number'.");
 }
 
-char IdentifierValue::as_char() const {
+char IdentValue::as_char() const {
    fmt::raise("Cannot convert 'Identifier' to 'Character'.");
 }
 
-bool IdentifierValue::as_bool() const {
+bool IdentValue::as_bool() const {
    fmt::raise("Cannot convert 'Identifier' to 'Boolean'.");
 }
 
-Value IdentifierValue::copy() const {
-   return std::make_unique<IdentifierValue>(identifier);
+Value IdentValue::copy() const {
+   return IdentValue::make(identifier);
 }
 
-Value IdentifierValue::negate() const { return copy(); }
-Value IdentifierValue::add(Value& other) const { return copy(); }
-Value IdentifierValue::subtract(Value& other) const { return copy(); }
-Value IdentifierValue::multiply(Value& other) const { return copy(); }
-Value IdentifierValue::divide(Value& other) const { return copy(); }
-Value IdentifierValue::remainder(Value& other) const { return copy(); }
-Value IdentifierValue::exponentiate(Value& other) const { return copy(); }
+Value IdentValue::negate() const { return copy(); }
+Value IdentValue::increment() { return copy(); }
+Value IdentValue::decrement() { return copy(); }
+Value IdentValue::add(Value& other) const { return copy(); }
+Value IdentValue::subtract(Value& other) const { return copy(); }
+Value IdentValue::multiply(Value& other) const { return copy(); }
+Value IdentValue::divide(Value& other) const { return copy(); }
+Value IdentValue::remainder(Value& other) const { return copy(); }
+Value IdentValue::exponentiate(Value& other) const { return copy(); }
 
 // Number value
 
@@ -76,34 +78,44 @@ bool NumberValue::as_bool() const {
 }
 
 Value NumberValue::copy() const {
-   return std::make_unique<NumberValue>(number);
+   return NumberValue::make(number);
 }
 
 Value NumberValue::negate() const {
-   return std::make_unique<NumberValue>(-number);
+   return NumberValue::make(-number);
+}
+
+Value NumberValue::increment() {
+   ++number;
+   return copy();
+}
+
+Value NumberValue::decrement() {
+   --number;
+   return copy();
 }
 
 Value NumberValue::add(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<NumberValue>(number + other->as_number());
+      return NumberValue::make(number + other->as_number());
    } else if (other->type == ValueType::string) {
-      return std::make_unique<StringValue>(std::to_string(number) + other->as_string());
+      return StringValue::make(std::to_string(number) + other->as_string());
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value NumberValue::subtract(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<NumberValue>(number - other->as_number());
+      return NumberValue::make(number - other->as_number());
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Number' - 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value NumberValue::multiply(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<NumberValue>(number * other->as_number());
+      return NumberValue::make(number * other->as_number());
    } else if (other->type == ValueType::string) {
       auto str = other->as_string();
       std::string final;
@@ -111,39 +123,39 @@ Value NumberValue::multiply(Value& other) const {
       for (int i = 0; i < number; ++i) {
          final += str;
       }
-      return std::make_unique<StringValue>(final);
+      return StringValue::make(final);
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value NumberValue::divide(Value& other) const {
    if (is_numeric(other->type)) {
       fmt::raise_if(other->as_number() == 0, "Tried to divide {} by zero.", number);
-      return std::make_unique<NumberValue>(number / other->as_number());
+      return NumberValue::make(number / other->as_number());
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Number' / 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value NumberValue::remainder(Value& other) const {
    if (is_numeric(other->type)) {
       auto other_num = static_cast<long long>(other->as_number());
       fmt::raise_if(other_num == 0, "Tried to divide {} by zero.", number);
-      return std::make_unique<NumberValue>(static_cast<long long>(number) % other_num);
+      return NumberValue::make(static_cast<long long>(number) % other_num);
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Number' % 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value NumberValue::exponentiate(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<NumberValue>(std::pow(number, other->as_number()));
+      return NumberValue::make(std::pow(number, other->as_number()));
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Number' ** 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 // Char value
@@ -172,34 +184,44 @@ bool CharValue::as_bool() const {
 }
 
 Value CharValue::copy() const {
-   return std::make_unique<CharValue>(ch);
+   return CharValue::make(ch);
 }
 
 Value CharValue::negate() const {
-   return std::make_unique<CharValue>(-ch);
+   return CharValue::make(-ch);
+}
+
+Value CharValue::increment() {
+   ++ch;
+   return copy();
+}
+
+Value CharValue::decrement() {
+   --ch;
+   return copy();
 }
 
 Value CharValue::add(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<CharValue>(ch + other->as_number());
+      return CharValue::make(ch + other->as_number());
    } else if (other->type == ValueType::string) {
-      return std::make_unique<StringValue>(as_string() + other->as_string());
+      return StringValue::make(as_string() + other->as_string());
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value CharValue::subtract(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<CharValue>(ch - other->as_number());
+      return CharValue::make(ch - other->as_number());
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Character' - 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value CharValue::multiply(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<CharValue>(ch * other->as_number());
+      return CharValue::make(ch * other->as_number());
    } else if (other->type == ValueType::string) {
       auto str = other->as_string();
       std::string final;
@@ -207,39 +229,39 @@ Value CharValue::multiply(Value& other) const {
       for (int i = 0; i < ch; ++i) {
          final += str;
       }
-      return std::make_unique<StringValue>(final);
+      return StringValue::make(final);
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value CharValue::divide(Value& other) const {
    if (is_numeric(other->type)) {
       fmt::raise_if(other->as_number() == 0, "Tried to divide {} by zero.", int(ch));
-      return std::make_unique<CharValue>(ch / other->as_number());
+      return CharValue::make(ch / other->as_number());
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Character' / 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value CharValue::remainder(Value& other) const {
    if (is_numeric(other->type)) {
       auto other_num = static_cast<long long>(other->as_number());
       fmt::raise_if(other_num == 0, "Tried to divide {} by zero.", int(ch));
-      return std::make_unique<CharValue>(ch % other_num);
+      return CharValue::make(ch % other_num);
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Character' % 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value CharValue::exponentiate(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<CharValue>(std::pow(ch, other->as_number()));
+      return CharValue::make(std::pow(ch, other->as_number()));
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Character' ** 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 // String value
@@ -273,18 +295,26 @@ bool StringValue::as_bool() const {
 }
 
 Value StringValue::copy() const {
-   return std::make_unique<StringValue>(string);
+   return StringValue::make(string);
 }
 
 Value StringValue::negate() const {
    fmt::raise("Invalid unary operation: - 'String'.");
 }
 
+Value StringValue::increment() {
+   fmt::raise("Invalid unary operation: 'String' ++.");
+}
+
+Value StringValue::decrement() {
+   fmt::raise("Invalid unary operation: 'String' --.");
+}
+
 Value StringValue::add(Value& other) const {
    if (other->type == ValueType::null) {
-      return std::make_unique<NullValue>();
+      return NullValue::make();
    }
-   return std::make_unique<StringValue>(string + other->as_string());
+   return StringValue::make(string + other->as_string());
 }
 
 Value StringValue::subtract(Value& other) const {
@@ -298,11 +328,11 @@ Value StringValue::multiply(Value& other) const {
       for (int i = 0; i < other->as_number(); ++i) {
          final += string;
       }
-      return std::make_unique<StringValue>(final);
+      return StringValue::make(final);
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'String' * 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value StringValue::divide(Value& other) const {
@@ -343,34 +373,44 @@ bool BoolValue::as_bool() const {
 }
 
 Value BoolValue::copy() const {
-   return std::make_unique<BoolValue>(value);
+   return BoolValue::make(value);
 }
 
 Value BoolValue::negate() const {
-   return std::make_unique<BoolValue>(-value);
+   return BoolValue::make(-value);
+}
+
+Value BoolValue::increment() {
+   value += 1;
+   return copy();
+}
+
+Value BoolValue::decrement() {
+   value -= 1;
+   return copy();
 }
 
 Value BoolValue::add(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<BoolValue>(value + other->as_number());
+      return BoolValue::make(value + other->as_number());
    } else if (other->type == ValueType::string) {
-      return std::make_unique<StringValue>(as_string() + other->as_string());
+      return StringValue::make(as_string() + other->as_string());
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value BoolValue::subtract(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<BoolValue>(value - other->as_number());
+      return BoolValue::make(value - other->as_number());
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Boolean' - 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value BoolValue::multiply(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<BoolValue>(value * other->as_number());
+      return BoolValue::make(value * other->as_number());
    } else if (other->type == ValueType::string) {
       auto str = other->as_string();
       std::string final;
@@ -378,39 +418,39 @@ Value BoolValue::multiply(Value& other) const {
       for (int i = 0; i < value; ++i) {
          final += str;
       }
-      return std::make_unique<StringValue>(final);
+      return StringValue::make(final);
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value BoolValue::divide(Value& other) const {
    if (is_numeric(other->type)) {
       fmt::raise_if(other->as_number() == 0, "Tried to divide {} by zero.", int(value));
-      return std::make_unique<BoolValue>(value - other->as_number());
+      return BoolValue::make(value - other->as_number());
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Boolean' / 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value BoolValue::remainder(Value& other) const {
    if (is_numeric(other->type)) {
       auto other_num = static_cast<long long>(other->as_number());
       fmt::raise_if(other_num == 0, "Tried to divide {} by zero.", int(value));
-      return std::make_unique<BoolValue>(value % other_num);
+      return BoolValue::make(value % other_num);
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Boolean' % 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value BoolValue::exponentiate(Value& other) const {
    if (is_numeric(other->type)) {
-      return std::make_unique<BoolValue>(std::pow(value, other->as_number()));
+      return BoolValue::make(std::pow(value, other->as_number()));
    } else if (other->type == ValueType::string) {
       fmt::raise("Invalid binary operation: 'Boolean' ** 'String'.");
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 // Null value
@@ -439,10 +479,12 @@ bool NullValue::as_bool() const {
 }
  
 Value NullValue::copy() const {
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value NullValue::negate() const { return copy(); }
+Value NullValue::increment() { return copy(); }
+Value NullValue::decrement() { return copy(); }
 Value NullValue::add(Value& other) const { return copy(); }
 Value NullValue::subtract(Value& other) const { return copy(); }
 Value NullValue::multiply(Value& other) const { return copy(); }

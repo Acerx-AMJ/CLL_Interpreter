@@ -12,7 +12,7 @@ namespace fun {
          if (i + 1 < args.size())
             std::cout << ' ';
       }
-      return std::make_unique<NullValue>();
+      return NullValue::make();
    }
 
    Value println(const std::vector<Value>& args) {
@@ -23,37 +23,37 @@ namespace fun {
 
    Value printf(const std::vector<Value>& args) {
       fmt::raise_if(args.empty() || args.at(0)->type != ValueType::string, "'printf': Expected at least one argument and expected the first argument to be a string.");
-      std::string base = static_cast<StringValue&>(*args.at(0).get()).string;
+      std::string base = get_value<StringValue>(args.at(0)).string;
       std::vector<std::string> arguments;
 
       for (int i = 1; i < args.size(); ++i) {
          arguments.push_back(args.at(i)->as_string());
       }
       fmt::printf_v(base.c_str(), arguments);
-      return std::make_unique<NullValue>();
+      return NullValue::make();
    }
 
    Value printfln(const std::vector<Value>& args) {
       fmt::raise_if(args.empty() || args.at(0)->type != ValueType::string, "'printfln': Expected at least one argument and expected the first argument to be a string.");
-      std::string base = static_cast<StringValue&>(*args.at(0).get()).string;
+      std::string base = get_value<StringValue>(args.at(0)).string;
       std::vector<std::string> arguments;
 
       for (int i = 1; i < args.size(); ++i) {
          arguments.push_back(args.at(i)->as_string());
       }
       fmt::printfln_v(base.c_str(), arguments);
-      return std::make_unique<NullValue>();
+      return NullValue::make();
    }
 
    Value format(const std::vector<Value>& args) {
       fmt::raise_if(args.empty() || args.at(0)->type != ValueType::string, "'format': Expected at least one argument and expected the first argument to be a string.");
-      std::string base = static_cast<StringValue&>(*args.at(0).get()).string;
+      std::string base = get_value<StringValue>(args.at(0)).string;
       std::vector<std::string> arguments;
 
       for (int i = 1; i < args.size(); ++i) {
          arguments.push_back(args.at(i)->as_string());
       }
-      return std::make_unique<StringValue>(fmt::format_v(base.c_str(), arguments));
+      return StringValue::make(fmt::format_v(base.c_str(), arguments));
    }
 
    // Input commands
@@ -65,7 +65,7 @@ namespace fun {
       }
       std::string user_input;
       std::getline(std::cin, user_input);
-      return std::make_unique<StringValue>(user_input);
+      return StringValue::make(user_input);
    }
 
    Value inputnum(const std::vector<Value>& args) {
@@ -77,7 +77,7 @@ namespace fun {
       std::cin >> user_input;
       std::cin.clear();
       std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-      return std::make_unique<NumberValue>(user_input);
+      return NumberValue::make(user_input);
    }
 
    Value inputch(const std::vector<Value>& args) {
@@ -89,28 +89,28 @@ namespace fun {
       std::cin >> std::noskipws >> user_input;
       std::cin.clear();
       std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-      return std::make_unique<CharValue>(user_input);
+      return CharValue::make(user_input);
    }
 
    // Convert functions
 
    Value string(const std::vector<Value>& args) {
       fmt::raise_if(args.size() > 1, "'string': Expected no arguments or a single argument.");
-      return std::make_unique<StringValue>((args.empty() ? "" : args.at(0)->as_string()));
+      return StringValue::make((args.empty() ? "" : args.at(0)->as_string()));
    }
 
    Value number(const std::vector<Value>& args) {
       fmt::raise_if(args.size() > 1, "'number': Expected no arguments or a single argument.");
-      return std::make_unique<NumberValue>((args.empty() ? 0 : args.at(0)->as_number()));
+      return NumberValue::make((args.empty() ? 0 : args.at(0)->as_number()));
    }
 
    Value char_(const std::vector<Value>& args) {
       fmt::raise_if(args.size() > 1, "'char': Expected no arguments or a single argument.");
-      return std::make_unique<CharValue>((args.empty() ? 0 : args.at(0)->as_char()));
+      return CharValue::make((args.empty() ? 0 : args.at(0)->as_char()));
    }
 
    Value bool_(const std::vector<Value>& args) {
       fmt::raise_if(args.size() > 1, "'bool': Expected no arguments or a single argument.");
-      return std::make_unique<BoolValue>((args.empty() ? false : args.at(0)->as_bool()));
+      return BoolValue::make((args.empty() ? false : args.at(0)->as_bool()));
    }
 }

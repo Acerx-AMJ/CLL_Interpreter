@@ -23,7 +23,6 @@ CLL is a high-level interpreted language inspired by Python and C++ made to be c
 - - [Scope](#scopes)
 - - [Delete](#delete-statements)
 - - [Escape Codes](#escape-codes)
-- [Quirks](#quirks)
 ## Compiling
 CLL uses no dependencies and is easy to build.
 #### Build with CMake
@@ -218,27 +217,9 @@ Variables can be incremented using `++` and decremented using `--`:
 ```cxx
 let x = 0
 println(x++)  // -> 1
-println(x----)  // -> -1
+println(x--)  // -> 0
 ```
-Here's where it gets quirky. `--` and `++` expressions get converted to a `+=` expression. So these expressions:
-```cxx
-let x = 0
-println(x++++)
-println(x----)
-println(x--++--)
-println(1++)  // Looks okay
-println("String"++)  // Probably an "Invalid unary operation: ++ "String".
-```
-Are converted to these:
-```cxx
-let x = 0
-println(x += 2)
-println(x += -2)
-println(x += -1)
-println(1 += 1)  // Instead, a cryptic error! ERROR: Expected an Identifier at the left side
-println("String"++)  // Instead, a cryptic error! ERROR: Expected an Identifier at the left side
-```
-Why is it done this way? Because in the interpreter, identifiers are all evaluated as early as possible. Which means expressions like `x----` (let's say x is 2) would get evaluated to `x--` and then `1--`, because `--` returns the value, not an identifier. In the end x would be 1, not 0. Either I have to rewrite my whole interpreter (not happening), live with the cryptic error messages in rare cases, or, also in rare cases, live without chained `--` and `++` operators. I will think about it.
+Unlike other binary and unary operators, `++` and `--` operators cannot be chained (e.g. `x-- --`), for that, there are the `+=` and `-=` operators.
 #### Scopes
 Scopes can be defined using `{}` like so:
 ```cxx
@@ -301,16 +282,3 @@ println("\e[32m This is green text! \e[0m")
 println("\e[34m This is blue text! \e[0m")
 ```
 There's a lot more that can be done using the `Escape` escape code. [This](https://gist.github.com/ConnerWill/d4b6c776b509add763e17f9f113fd25b) is a good reference on escape codes.
-## Quirks
-Here's a list of some quirks of this language that might cause confusion:
-- `--` and `++` expressions get converted to `+=` expressions. More on that [here](#assignment).
-- Variables can have the same names as functions, meaning follow code is okay:
-```cxx
-let println = 2
-println(println)
-```
-- For escape codes, such as colors, `\e` must be used. Other codes, such as `\033` are not supported for this.
-- All operations that use null, return null, even operations such as
-```cxx
-println(1 + null)  // -> null
-```

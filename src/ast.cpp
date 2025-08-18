@@ -145,15 +145,15 @@ Stmt NumberLiteral::copy() const {
    return std::make_unique<NumberLiteral>(number, line);
 }
 
-CharLiteral::CharLiteral(char character, int line)
-   : character(character), Statement(StmtType::character, line) {}
+CharLiteral::CharLiteral(char ch, int line)
+   : ch(ch), Statement(StmtType::character, line) {}
 
 void CharLiteral::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << '\'' << character << "'\n";
+   std::cout << std::string(indentation, ' ') << '\'' << ch << "'\n";
 }
 
 Stmt CharLiteral::copy() const {
-   return std::make_unique<CharLiteral>(character, line);
+   return std::make_unique<CharLiteral>(ch, line);
 }
 
 StringLiteral::StringLiteral(const std::string& string, int line)

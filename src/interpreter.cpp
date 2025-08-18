@@ -28,29 +28,29 @@ Value Interpreter::evaluate_stmt(Stmt stmt) {
 }
 
 Value Interpreter::evaluate_var_decl(Stmt stmt) {
-   auto& decl = static_cast<VarDeclaration&>(*stmt.get());
+   auto& decl = get_stmt<VarDeclaration>(stmt);
    size_t isize = decl.identifiers.size(), vsize = decl.values.size();
    
    bool single_decl = (vsize == 1 && isize != 1);
-   Value first (single_decl ? evaluate_expr(decl.values.at(0)->copy()) : std::make_unique<NullValue>());
+   Value first (single_decl ? evaluate_expr(decl.values.at(0)->copy()) : NullValue::make());
 
    for (int i = 0; i < isize; ++i) {
       Value value = (single_decl || (vsize != isize && i >= vsize) ? first->copy() : evaluate_expr(std::move(decl.values.at(i))));
-      environment.declare_variable(static_cast<IdentLiteral&>(*decl.identifiers.at(i).get()).identifier, std::move(value), decl.constant);
+      environment.declare_variable(get_stmt<IdentLiteral>(decl.identifiers.at(i)).identifier, std::move(value), decl.constant);
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value Interpreter::evaluate_del_stmt(Stmt stmt) {
-   auto& del = static_cast<DeleteStmt&>(*stmt.get());
+   auto& del = get_stmt<DeleteStmt>(stmt);
    for (const auto& identifier : del.identifiers) {
-      environment.delete_variable(static_cast<IdentLiteral&>(*identifier.get()).identifier);
+      environment.delete_variable(get_stmt<IdentLiteral>(identifier).identifier);
    }
-   return std::make_unique<NullValue>();
+   return NullValue::make();
 }
 
 Value Interpreter::evaluate_scope(Stmt expr) {
-   auto& program = static_cast<Program&>(*expr.get());
+   auto& program = get_stmt<Program>(expr);
    Environment env (&environment);
    Interpreter interpreter (program, env);
    return interpreter.evaluate();
@@ -76,21 +76,44 @@ Value Interpreter::evaluate_expr(Stmt expr) {
 }
 
 Value Interpreter::evaluate_unary_expr(Stmt expr) {
-   auto& unary = static_cast<UnaryExpr&>(*expr.get());
-   auto value = evaluate_expr(std::move(unary.value));
+   auto& unary = get_stmt<UnaryExpr>(expr);
 
    switch (unary.op) {
-   case Type::plus:
+   case Type::plus: {
+      auto value = evaluate_expr(std::move(unary.value));
       return std::move(value);
-   case Type::minus:
+   }
+   case Type::minus: {
+      auto value = evaluate_expr(std::move(unary.value));
       return std::move(value->negate());
+   }
+   case Type::increment: {
+      if (unary.value->type == StmtType::identifier) {
+         auto& ident = get_stmt<IdentLiteral>(unary.value);
+         auto value = environment.get_variable(ident.identifier)->increment();
+         environment.assign_variable(ident.identifier, value->copy());
+         return std::move(value);
+      }
+      auto value = evaluate_expr(std::move(unary.value));
+      return std::move(value->increment());
+   }
+   case Type::decrement: {
+      if (unary.value->type == StmtType::identifier) {
+         auto& ident = get_stmt<IdentLiteral>(unary.value);
+         auto value = environment.get_variable(ident.identifier)->decrement();
+         environment.assign_variable(ident.identifier, value->copy());
+         return std::move(value);
+      }
+      auto value = evaluate_expr(std::move(unary.value));
+      return std::move(value->decrement());
+   }
    default:
       fmt::raise("Unsupported unary command '{}'.", type_str[int(unary.op)]);
    }
 }
 
 Value Interpreter::evaluate_binary_expr(Stmt expr) {
-   auto& binary = static_cast<BinaryExpr&>(*expr.get());
+   auto& binary = get_stmt<BinaryExpr>(expr);
    auto left = evaluate_expr(std::move(binary.left));
    auto right = evaluate_expr(std::move(binary.right));
 
@@ -113,10 +136,10 @@ Value Interpreter::evaluate_binary_expr(Stmt expr) {
 }
 
 Value Interpreter::evaluate_assignment(Stmt expr) {
-   auto& assignment = static_cast<AssignmentExpr&>(*expr.get());
+   auto& assignment = get_stmt<AssignmentExpr>(expr);
    fmt::raise_if(assignment.left->type != StmtType::identifier, "Expected an 'IdentifierLiteral' at the left side of the '{}' operator, got '{}' instead at line {}.", type_str[int(assignment.op)], stmt_type_str[int(assignment.left->type)], assignment.left->line);
    
-   auto identifier = static_cast<IdentLiteral&>(*assignment.left.get()).identifier;
+   auto identifier = get_stmt<IdentLiteral>(assignment.left).identifier;
    auto value = evaluate_expr(std::move(assignment.right));
 
    switch (assignment.op) {
@@ -149,31 +172,31 @@ Value Interpreter::evaluate_assignment(Stmt expr) {
 }
 
 Value Interpreter::evaluate_call_expr(Stmt expr) {
-   auto& call = static_cast<CallExpr&>(*expr.get());
+   auto& call = get_stmt<CallExpr>(expr);
    std::vector<Value> args;
-   for (auto& arg : static_cast<ArgsListExpr&>(*call.args.get()).args)
+   for (auto& arg : get_stmt<ArgsListExpr>(call.args).args)
       args.push_back(std::move(evaluate_expr(std::move(arg))));
 
-   return std::move(environment.call_function(static_cast<IdentLiteral&>(*call.identifier.get()).identifier, args));
+   return std::move(environment.call_function(get_stmt<IdentLiteral>(call.identifier).identifier, args));
 }
 
 Value Interpreter::evaluate_primary_expr(Stmt expr) {
    switch (expr->type) {
    case StmtType::identifier: {
-      Value ident = std::make_unique<IdentifierValue>(static_cast<IdentLiteral&>(*expr.get()).identifier);
+      Value ident = IdentValue::make(get_stmt<IdentLiteral>(expr).identifier);
       while (ident->type == ValueType::identifier) {
-         ident = std::move(environment.get_variable(static_cast<IdentifierValue&>(*ident.get()).identifier));
+         ident = std::move(environment.get_variable(get_value<IdentValue>(ident).identifier));
       }
       return std::move(ident);
    }
    case StmtType::number:
-      return std::make_unique<NumberValue>(static_cast<NumberLiteral&>(*expr.get()).number);
+      return NumberValue::make(get_stmt<NumberLiteral>(expr).number);
    case StmtType::character:
-      return std::make_unique<CharValue>(static_cast<CharLiteral&>(*expr.get()).character);
+      return CharValue::make(get_stmt<CharLiteral>(expr).ch);
    case StmtType::string:
-      return std::make_unique<StringValue>(static_cast<StringLiteral&>(*expr.get()).string);
+      return StringValue::make(get_stmt<StringLiteral>(expr).string);
    case StmtType::null:
-      return std::make_unique<NullValue>();
+      return NullValue::make();
    case StmtType::program:
       return evaluate_scope(std::move(expr));
    default:

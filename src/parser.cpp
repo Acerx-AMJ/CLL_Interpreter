@@ -57,11 +57,11 @@ Stmt Parser::parse_var_decl() {
 
       fmt::raise_if(body.size() > identifiers.size(), "Expected identifier count to be bigger than value count at line {}.", line());
       fmt::raise_if(constant && body.size() != 1 && body.size() != identifiers.size(), "Expected constant variable's value count to be equal to 1 or identifier count at line {}.", line());
-      return std::make_unique<VarDeclaration>(constant, std::move(identifiers), std::move(body), line());
+      return VarDeclaration::make(constant, std::move(identifiers), std::move(body), line());
    }
 
    fmt::raise_if(constant, "Expected constant variable at line {} to have initialized value.", line());
-   return std::make_unique<VarDeclaration>(constant, std::move(identifiers), std::move(body), line());
+   return VarDeclaration::make(constant, std::move(identifiers), std::move(body), line());
 }
 
 Stmt Parser::parse_del_stmt() {
@@ -80,7 +80,7 @@ Stmt Parser::parse_del_stmt() {
 
    identifiers.push_back(std::move(identifier));
    std::vector<Stmt> body;
-   return std::make_unique<DeleteStmt>(std::move(identifiers), line());
+   return DeleteStmt::make(std::move(identifiers), line());
 }
 
 // Parse expression functions
@@ -97,7 +97,7 @@ Stmt Parser::parse_assignment_expr() {
       advance();
 
       auto right = parse_assignment_expr();
-      left = std::make_unique<AssignmentExpr>(op, std::move(left), std::move(right), line());
+      left = AssignmentExpr::make(op, std::move(left), std::move(right), line());
    }
    return std::move(left);
 }
@@ -110,7 +110,7 @@ Stmt Parser::parse_additive_expr() {
       advance();
 
       auto right = parse_multiplicative_expr();
-      left = std::make_unique<BinaryExpr>(op, std::move(left), std::move(right), line());
+      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
    }
    return std::move(left);
 }
@@ -123,7 +123,7 @@ Stmt Parser::parse_multiplicative_expr() {
       advance();
 
       auto right = parse_exponentiative_expr();
-      left = std::make_unique<BinaryExpr>(op, std::move(left), std::move(right), line());
+      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
    }
    return std::move(left);
 }
@@ -136,7 +136,7 @@ Stmt Parser::parse_exponentiative_expr() {
       advance();
 
       auto right = parse_exponentiative_expr();
-      left = std::make_unique<BinaryExpr>(op, std::move(left), std::move(right), line());
+      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
    }
    return std::move(left);
 }
@@ -150,24 +150,19 @@ Stmt Parser::parse_unary_expr() {
    }
    auto expr = parse_reverse_unary_expr();
    for (const auto& op : ops) {
-      expr = std::make_unique<UnaryExpr>(op, std::move(expr), line());
+      expr = UnaryExpr::make(op, std::move(expr), line());
    }
    return expr;
 }
 
 Stmt Parser::parse_reverse_unary_expr() {
    auto expr = parse_call_expr();
-   int count = 0;
-
-   while (is(Type::increment) || is (Type::decrement)) {
-      count += (is(Type::increment) ? 1 : -1);
+   if (is(Type::increment) || is(Type::decrement)) {
+      Type op = current().type;
       advance();
+      expr = UnaryExpr::make(op, std::move(expr), line());
    }
-
-   if (count == 0) {
-      return std::move(expr);
-   }
-   return std::make_unique<AssignmentExpr>(Type::plus_equals, std::move(expr), std::make_unique<NumberLiteral>(count, line()), line());
+   return expr;
 }
 
 Stmt Parser::parse_call_expr() {
@@ -177,7 +172,7 @@ Stmt Parser::parse_call_expr() {
    }
    auto args = parse_args_list();
    fmt::raise_if(args->type != StmtType::args, "Expected arguments list after identifier, got '{}' instead at line {}.", stmt_type_str[int(args->type)], line());
-   return std::make_unique<CallExpr>(std::move(args), std::move(identifier), line());
+   return CallExpr::make(std::move(args), std::move(identifier), line());
 }
 
 Stmt Parser::parse_args_list() {
@@ -189,7 +184,7 @@ Stmt Parser::parse_args_list() {
 
    if (is(Type::r_paren)) {
       advance();
-      return std::make_unique<ArgsListExpr>(std::move(args), line());
+      return ArgsListExpr::make(std::move(args), line());
    }
 
    auto arg = parse_expr();
@@ -206,14 +201,14 @@ Stmt Parser::parse_args_list() {
    args.push_back(std::move(arg));
    fmt::raise_if(!is(Type::r_paren), "Expected a matching ')' after argument list, got '{}' instead at line {}.", type_str[int(current().type)], line());
    advance();
-   return std::make_unique<ArgsListExpr>(std::move(args), line());
+   return ArgsListExpr::make(std::move(args), line());
 }
 
 Stmt Parser::parse_primary_expr() {
    if (is(Type::identifier)) {
       std::string identifier = current().lexeme;
       advance();
-      return std::make_unique<IdentLiteral>(identifier, line());
+      return IdentLiteral::make(identifier, line());
    } else if (is(Type::number)) {
       long double number = 0.0;
 
@@ -223,15 +218,15 @@ Stmt Parser::parse_primary_expr() {
          fmt::raise("Failed to convert string '{}' to number at line {}.", current().lexeme, line());
       }
       advance();
-      return std::make_unique<NumberLiteral>(number, line());
+      return NumberLiteral::make(number, line());
    } else if (is(Type::character)) {
       char ch = current().lexeme.at(0);
       advance();
-      return std::make_unique<CharLiteral>(ch, line());
+      return CharLiteral::make(ch, line());
    } else if (is(Type::string)) {
       std::string string = current().lexeme;
       advance();
-      return std::make_unique<StringLiteral>(string, line());
+      return StringLiteral::make(string, line());
    } else if (is(Type::l_paren)) {
       advance();
       auto value = parse_expr();
