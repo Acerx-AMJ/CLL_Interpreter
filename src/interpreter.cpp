@@ -84,10 +84,6 @@ Value Interpreter::evaluate_unary_expr(Stmt expr) {
       return std::move(value);
    case Type::minus:
       return std::move(value->negate());
-   case Type::increment:
-      return std::move(value->increment());
-   case Type::decrement:
-      return std::move(value->decrement());
    default:
       fmt::raise("Unsupported unary command '{}'.", type_str[int(unary.op)]);
    }

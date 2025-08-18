@@ -42,8 +42,6 @@ Value IdentifierValue::copy() const {
 }
 
 Value IdentifierValue::negate() const { return copy(); }
-Value IdentifierValue::increment() { return copy(); }
-Value IdentifierValue::decrement() { return copy(); }
 Value IdentifierValue::add(Value& other) const { return copy(); }
 Value IdentifierValue::subtract(Value& other) const { return copy(); }
 Value IdentifierValue::multiply(Value& other) const { return copy(); }
@@ -83,16 +81,6 @@ Value NumberValue::copy() const {
 
 Value NumberValue::negate() const {
    return std::make_unique<NumberValue>(-number);
-}
-
-Value NumberValue::increment() {
-   ++number;
-   return copy();
-}
-
-Value NumberValue::decrement() {
-   --number;
-   return copy();
 }
 
 Value NumberValue::add(Value& other) const {
@@ -189,16 +177,6 @@ Value CharValue::copy() const {
 
 Value CharValue::negate() const {
    return std::make_unique<CharValue>(-ch);
-}
-
-Value CharValue::increment() {
-   ++ch;
-   return copy();
-}
-
-Value CharValue::decrement() {
-   --ch;
-   return copy();
 }
 
 Value CharValue::add(Value& other) const {
@@ -302,14 +280,6 @@ Value StringValue::negate() const {
    fmt::raise("Invalid unary operation: - 'String'.");
 }
 
-Value StringValue::increment() {
-   fmt::raise("Invalid unary operation: ++ 'String'.");
-}
-
-Value StringValue::decrement() {
-   fmt::raise("Invalid unary operation: -- 'String'.");
-}
-
 Value StringValue::add(Value& other) const {
    if (other->type == ValueType::null) {
       return std::make_unique<NullValue>();
@@ -378,16 +348,6 @@ Value BoolValue::copy() const {
 
 Value BoolValue::negate() const {
    return std::make_unique<BoolValue>(-value);
-}
-
-Value BoolValue::increment() {
-   value += 1;
-   return copy();
-}
-
-Value BoolValue::decrement() {
-   value -= 1;
-   return copy();
 }
 
 Value BoolValue::add(Value& other) const {
@@ -483,8 +443,6 @@ Value NullValue::copy() const {
 }
 
 Value NullValue::negate() const { return copy(); }
-Value NullValue::increment() { return copy(); }
-Value NullValue::decrement() { return copy(); }
 Value NullValue::add(Value& other) const { return copy(); }
 Value NullValue::subtract(Value& other) const { return copy(); }
 Value NullValue::multiply(Value& other) const { return copy(); }

@@ -56,6 +56,7 @@ Stmt Parser::parse_var_decl() {
       body.push_back(std::move(value));
 
       fmt::raise_if(body.size() > identifiers.size(), "Expected identifier count to be bigger than value count at line {}.", line());
+      fmt::raise_if(constant && body.size() != 1 && body.size() != identifiers.size(), "Expected constant variable's value count to be equal to 1 or identifier count at line {}.", line());
       return std::make_unique<VarDeclaration>(constant, std::move(identifiers), std::move(body), line());
    }
 
@@ -143,7 +144,7 @@ Stmt Parser::parse_exponentiative_expr() {
 Stmt Parser::parse_unary_expr() {
    std::vector<Type> ops;
 
-   while (is(Type::minus) || is(Type::plus) || is(Type::increment) || is(Type::decrement)) {
+   while (is(Type::minus) || is(Type::plus)) {
       ops.push_back(current().type);
       advance();
    }
@@ -156,16 +157,17 @@ Stmt Parser::parse_unary_expr() {
 
 Stmt Parser::parse_reverse_unary_expr() {
    auto expr = parse_call_expr();
-   std::vector<Type> ops;
+   int count = 0;
 
    while (is(Type::increment) || is (Type::decrement)) {
-      ops.push_back(current().type);
+      count += (is(Type::increment) ? 1 : -1);
       advance();
    }
-   for (const auto& op : ops) {
-      expr = std::make_unique<UnaryExpr>(op, std::move(expr), line());
+
+   if (count == 0) {
+      return std::move(expr);
    }
-   return expr;
+   return std::make_unique<AssignmentExpr>(Type::plus_equals, std::move(expr), std::make_unique<NumberLiteral>(count, line()), line());
 }
 
 Stmt Parser::parse_call_expr() {

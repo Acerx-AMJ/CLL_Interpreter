@@ -34,7 +34,7 @@ std::vector<Token>& Lexer::lex() {
             prefix = bin || hex || oct;
 
             if (prefix) {
-               advance();
+               ch = advance();
             }
          }
 
@@ -154,7 +154,7 @@ char Lexer::advance() {
 char Lexer::get_escape_code(char escape) {
    static std::unordered_map<char, char> code_map {
       {'a', '\a'}, {'b', '\b'}, {'t', '\t'}, {'n', '\n'}, {'v', '\v'}, {'f', '\f'},
-      {'r', '\r'}, {'e', '\e'}, {'\\', '\\'}, {'\'', '\''}, {'"', '"'}, {'0', '\0'}
+      {'r', '\r'}, {'e', '\e'}, {'\\', '\\'}, {'\'', '\''}, {'"', '"'}
    };
    fmt::raise_if(code_map.find(escape) == code_map.end(), "Unknown escape code '\\{}' at line {}.", escape, line);
    return code_map[escape];
