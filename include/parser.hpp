@@ -17,6 +17,7 @@ class Parser {
 
    // Expression functions
    Stmt parse_expr();
+   Stmt parse_ternary_expr();
    Stmt parse_value_or_expr();
    Stmt parse_assignment_expr();
 

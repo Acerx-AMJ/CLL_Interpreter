@@ -14,8 +14,9 @@ class Interpreter {
    Value evaluate_scope(Stmt stmt);
    
    Value evaluate_expr(Stmt expr);
-   Value evaluate_unary_expr(Stmt expr);
+   Value evaluate_ternary_expr(Stmt expr);
    Value evaluate_binary_expr(Stmt expr);
+   Value evaluate_unary_expr(Stmt expr);
    Value evaluate_assignment(Stmt expr);
    Value evaluate_call_expr(Stmt expr);
    Value evaluate_primary_expr(Stmt expr);

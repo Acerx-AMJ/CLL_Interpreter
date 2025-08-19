@@ -6,13 +6,13 @@
 #include <vector>
 
 enum class StmtType : char {
-   var_decl, del, assignment, binary, unary, call, args, identifier, number, character, string, null, program
+   var_decl, del, assignment, ternary, binary, unary, call, args, identifier, number, character, string, null, program
 };
 
 constexpr std::string_view stmt_type_str[] {
-   "VariableDeclaration", "DeleteStatement", "AssignmentExpression", "BinaryExpression", "UnaryExpression",
-   "CallExpression", "ArgumentListExpression", "IdentifierLiteral", "NumberLiteral", "CharacterLiteral",
-   "StringLiteral", "NullLiteral", "Program"
+   "VariableDeclaration", "DeleteStatement", "AssignmentExpression", "TernaryExpression", "BinaryExpression",
+   "UnaryExpression", "CallExpression", "ArgumentListExpression", "IdentifierLiteral", "NumberLiteral",
+   "CharacterLiteral", "StringLiteral", "NullLiteral", "Program"
 };
 
 struct Statement;
@@ -73,6 +73,20 @@ struct AssignmentExpr : public Statement {
    AssignmentExpr(Type op, Stmt left, Stmt right, int line);
    static Stmt make(Type op, Stmt left, Stmt right, int line) {
       return std::make_unique<AssignmentExpr>(op, std::move(left), std::move(right), line);
+   }
+
+   void print(int indentation) const override;
+   Stmt copy() const override;
+};
+
+struct TernaryExpr : public Statement {
+   Stmt left;
+   Stmt middle;
+   Stmt right;
+
+   TernaryExpr(Stmt left, Stmt middle, Stmt right, int line);
+   static Stmt make(Stmt left, Stmt middle, Stmt right, int line) {
+      return std::make_unique<TernaryExpr>(std::move(left), std::move(middle), std::move(right), line);
    }
 
    void print(int indentation) const override;

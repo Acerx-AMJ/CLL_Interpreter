@@ -64,56 +64,23 @@ Value Interpreter::evaluate_expr(Stmt expr) {
       fmt::raise("Unexpected argument list while evaluating.");
    case StmtType::assignment:
       return evaluate_assignment(std::move(expr));
+   case StmtType::ternary:
+      return evaluate_ternary_expr(std::move(expr));
    case StmtType::binary:
       return evaluate_binary_expr(std::move(expr));
-   case StmtType::call:
-      return evaluate_call_expr(std::move(expr));
    case StmtType::unary:
       return evaluate_unary_expr(std::move(expr));
+   case StmtType::call:
+      return evaluate_call_expr(std::move(expr));
    default:
       return evaluate_primary_expr(std::move(expr));
    }
 }
 
-Value Interpreter::evaluate_unary_expr(Stmt expr) {
-   auto& unary = get_stmt<UnaryExpr>(expr);
-
-   switch (unary.op) {
-   case Type::plus: {
-      auto value = evaluate_stmt(std::move(unary.value));
-      return std::move(value);
-   }
-   case Type::minus: {
-      auto value = evaluate_stmt(std::move(unary.value));
-      return std::move(value->negate());
-   }
-   case Type::increment: {
-      if (unary.value->type == StmtType::identifier) {
-         auto& ident = get_stmt<IdentLiteral>(unary.value);
-         auto value = evaluate_stmt(ident.copy())->increment();
-         environment.assign_variable(ident.identifier, value->copy());
-         return std::move(value);
-      }
-      auto value = evaluate_stmt(std::move(unary.value));
-      return std::move(value->increment());
-   }
-   case Type::decrement: {
-      if (unary.value->type == StmtType::identifier) {
-         auto& ident = get_stmt<IdentLiteral>(unary.value);
-         auto value = evaluate_stmt(ident.copy())->decrement();
-         environment.assign_variable(ident.identifier, value->copy());
-         return std::move(value);
-      }
-      auto value = evaluate_stmt(std::move(unary.value));
-      return std::move(value->decrement());
-   }
-   case Type::log_not: {
-      auto value = evaluate_stmt(std::move(unary.value));
-      return BoolValue::make(!value->as_bool());
-   }
-   default:
-      fmt::raise("Unsupported unary command '{}'.", type_str[int(unary.op)]);
-   }
+Value Interpreter::evaluate_ternary_expr(Stmt expr) {
+   auto& ternary = get_stmt<TernaryExpr>(expr);
+   auto left = evaluate_stmt(std::move(ternary.left));
+   return std::move(evaluate_stmt(std::move((left->as_bool() ? ternary.middle : ternary.right))));
 }
 
 Value Interpreter::evaluate_binary_expr(Stmt expr) {
@@ -163,6 +130,47 @@ Value Interpreter::evaluate_binary_expr(Stmt expr) {
       return BoolValue::make(!left->greater(right, "<="));
    default:
       fmt::raise("Unsupported binary command '{}'.", type_str[int(binary.op)]);
+   }
+}
+
+Value Interpreter::evaluate_unary_expr(Stmt expr) {
+   auto& unary = get_stmt<UnaryExpr>(expr);
+
+   switch (unary.op) {
+   case Type::plus: {
+      auto value = evaluate_stmt(std::move(unary.value));
+      return std::move(value);
+   }
+   case Type::minus: {
+      auto value = evaluate_stmt(std::move(unary.value));
+      return std::move(value->negate());
+   }
+   case Type::increment: {
+      if (unary.value->type == StmtType::identifier) {
+         auto& ident = get_stmt<IdentLiteral>(unary.value);
+         auto value = evaluate_stmt(ident.copy())->increment();
+         environment.assign_variable(ident.identifier, value->copy());
+         return std::move(value);
+      }
+      auto value = evaluate_stmt(std::move(unary.value));
+      return std::move(value->increment());
+   }
+   case Type::decrement: {
+      if (unary.value->type == StmtType::identifier) {
+         auto& ident = get_stmt<IdentLiteral>(unary.value);
+         auto value = evaluate_stmt(ident.copy())->decrement();
+         environment.assign_variable(ident.identifier, value->copy());
+         return std::move(value);
+      }
+      auto value = evaluate_stmt(std::move(unary.value));
+      return std::move(value->decrement());
+   }
+   case Type::log_not: {
+      auto value = evaluate_stmt(std::move(unary.value));
+      return BoolValue::make(!value->as_bool());
+   }
+   default:
+      fmt::raise("Unsupported unary command '{}'.", type_str[int(unary.op)]);
    }
 }
 

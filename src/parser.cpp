@@ -88,7 +88,23 @@ Stmt Parser::parse_del_stmt() {
 // Parse expression functions
 
 Stmt Parser::parse_expr() {
-   return parse_value_or_expr();
+   return parse_ternary_expr();
+}
+
+Stmt Parser::parse_ternary_expr() {
+   auto left = parse_value_or_expr();
+
+   while (is(Type::quesion)) {
+      advance();
+
+      auto middle = parse_ternary_expr();
+      fmt::raise_if(!is(Type::colon), "Expected ':' after '{} ? {}'.", stmt_type_str[int(left->type)], stmt_type_str[int(middle->type)]);
+      advance();
+
+      auto right = parse_ternary_expr();
+      left = TernaryExpr::make(std::move(left), std::move(middle), std::move(right), line());
+   }
+   return std::move(left);
 }
 
 Stmt Parser::parse_value_or_expr() {
