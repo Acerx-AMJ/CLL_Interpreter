@@ -104,27 +104,43 @@ let x = null
 ```
 #### Supported operators
 Unary:
-- `-` - negate value.
-- `+` - do nothing.
-- `--` - decrement value (only right side).
-- `++` - increment value (only right side).
+- `-a` - negate `a`.
+- `+a` - do nothing.
+- `a--` - decrement `a` (only right side).
+- `a++` - increment `a` (only right side).
+- `!a` - if `a` is true, return false, else true
 
 Binary:
-- `+` - add both values together. If one or both of the values is a string, concatenate it and return string.
-- `-` - subtract values apart.
-- `*` - multiply both values. If one value is a number (this includes characters and booleans) and other a string, then return a string that is repeated n amount of times.
-- `/` - perform division.
-- `%` - perform integer division and return the remainder.
-- `**` - exponentiate left value to the power of right value ((2 ** 2 ** 3) will evaluate to 2 ** 8 -> 256. Operation precedence is reversed for exponentiation).
+- `a + b` - add `a` to `b`. If one or both of the values is a string, concatenate it and return string.
+- `a - b` - subtract `a` by `b`.
+- `a * b` - multiply `a` by `b`. If one value is a number (this includes characters and booleans) and other a string, then return a string that is repeated n amount of times.
+- `a / b` - divide `a` by `b`.
+- `a % b` - divide `a` by `b` and return remainder (works with real numbers: `2.50 % 2 -> 0.50`).
+- `a ** b` - exponentiate `a` to the power of `b`.
+- `a && b` - if `a` and `b` are true, return true, else false
+- `a || b` - if either `a` or `b` is true, return true, else false
+- `a %% b` - if `a` is divisible by `b`, return true, else false
+- `a ?? b` - if `a` is true, return `b`, else null
+- `a == b` - if `a` is equal to `b`, return true, else false
+- `a === b` - if `a` is equal to `b` and is the same type, return true, else false
+- `a != b` - if `a` is not equal to `b`, return true, else false
+- `a !== b` - if `a` is not equal to `b` or is not the same type, return true, else false
+- `a > b` - if `a` is greater than `b`, return true, else false
+- `a >= b` - if `a` is greater than or equal to `b`, return true, else false
+- `a < b` - if `a` is smaller than `b`, return true, else false
+- `a <= b` - if `a` is smaller than or equal to `b`, return true, else false
+
+Ternary:
+- `a ? b : c` - if a is true, return b, else c
 
 Assignment:
-- `=` - assign value to variable.
-- `+=` - add value to variable and assign the result.
-- `-=` - subtract the values apart and assign the result.
-- `*=` - multiply values and assign the result.
-- `/=` - divide the values apart and assign the result.
-- `%=` - divide the values apart and assign the remainder.
-- `**=` - exponentiate variable to the power of the right side and assign the result.
+- `a = b` - assign `b` to `a`.
+- `a += b` - add `a` to `b` and assign the result.
+- `a -= b` - subtract `a` by `b` and assign the result.
+- `a *= b` - multiply `a` by `b` and assign the result.
+- `a /= b` - divide `a` by `b` and assign the result.
+- `a %= b` - divide `a` by `b` and assign the remainder.
+- `a **= b` - exponentiate `a` to the power of `b` and assign the result.
 
 Parentheses (`()`) can change operator precedence as follows:
 ```cxx
@@ -147,6 +163,27 @@ Built-in functions:
 - `number` - attempt to convert the first argument to a string and return if successful or return 0 if no arguments.
 - `char` - attempt to convert the first argument to a character and return if successful or return 0 if no arguments.
 - `bool` - convert first argument to a boolean or return false. Empty strings, 0's and null values are false, everything else is true.
+#### Operator precedence
+the following table lists precedence and associativity of operators and expressions.
+|Precedence|Expression|Description|Associativity|
+|-|-|-|-|
+|1|`identifier`, `number`, `character`, `string`, `()`, `{}`, `variable declaration`, `delete statement`|Primary expressions, parentheses, scopes, statements.|Single|
+|2|`a, b, c`|Argument list expression.|Single|
+|3|`a(b, c)`|Call expression.|Single|
+|4|`a--`, `a++`|Increment, decrement.|Single|
+|5|`-a`, `+a`, `!a`|Unary minus and plus, logical not.|Right-to-left|
+|6|`a ** b`|Exponentiation.|Right-to-left|
+|7|`a * b`, `a / b`, `a % b`|Multiplication, division, remainder.|Left-to-right|
+|8|`a + b`, `a - b`|Addition, subtraction.|Left-to-right|
+|9|`a > b`, `a >= b`, `a < b`, `a <= b`|Relation operators.|Left-to-right|
+|10|`a == b`, `a === b`, `a != b`, `a !== b`, `a %% b`|Equality operators and divisible operator.|Left-to-right|
+|11|`a && b`|Logical and.|Left-to-right|
+|12|`a \|\| b`|Logical or.|Left-to-right|
+|13|`a = b`, `a += b`, `a -= b`, `a *= b`, `a /= b`, `a %= b`, `a **= b`|Assignment and compound assignment.|Left-to-right|
+|14|`a ?? b`|Binary condition.|Right-to-left|
+|15|`a ? b : c`|Ternary condition.|Right-to-left|
+
+Left-to-right and right-to-left associativity shows in which direction expressions get parsed. Single means that expressions cannot be chained.
 #### Calling functions
 Functions can be called using `()` operators like so:
 ```cxx

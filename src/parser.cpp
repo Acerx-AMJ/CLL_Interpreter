@@ -232,8 +232,8 @@ Stmt Parser::parse_unary_expr() {
       advance();
    }
    auto expr = parse_reverse_unary_expr();
-   for (const auto& op : ops) {
-      expr = UnaryExpr::make(op, std::move(expr), line());
+   for (int i = ops.size() - 1; i >= 0; --i) {
+      expr = UnaryExpr::make(ops.at(i), std::move(expr), line());
    }
    return expr;
 }
