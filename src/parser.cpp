@@ -22,7 +22,7 @@ Stmt Parser::parse_stmt() {
       } else if (token.lexeme == "delete"s) {
          return parse_del_stmt();
       } else {
-         fmt::raise("Unknown keyword '{}' at line {}.", token.lexeme, token.line);
+         fmt::raise(token.line, "Unknown keyword '{}'.", token.lexeme);
       }
    }
    return parse_expr();
@@ -34,13 +34,13 @@ Stmt Parser::parse_var_decl() {
 
    std::vector<Stmt> identifiers;
    auto identifier = std::move(parse_primary_expr());
-   fmt::raise_if(identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead at line {}.", stmt_type_str[int(identifier->type)], line());
+   fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead.", stmt_type_str[int(identifier->type)]);
 
    while (is(Type::comma)) {
       advance();
       identifiers.push_back(std::move(identifier));
       identifier = std::move(parse_primary_expr());
-      fmt::raise_if(identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead at line {}.", stmt_type_str[int(identifier->type)], line());
+      fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead.", stmt_type_str[int(identifier->type)]);
    }
 
    identifiers.push_back(std::move(identifier));
@@ -57,12 +57,12 @@ Stmt Parser::parse_var_decl() {
       }
       body.push_back(std::move(value));
 
-      fmt::raise_if(body.size() > identifiers.size(), "Expected identifier count to be bigger than value count at line {}.", line());
-      fmt::raise_if(constant && body.size() != 1 && body.size() != identifiers.size(), "Expected constant variable's value count to be equal to 1 or identifier count at line {}.", line());
+      fmt::raise_if(line(), body.size() > identifiers.size(), "Expected identifier count to be bigger than value count.");
+      fmt::raise_if(line(), constant && body.size() != 1 && body.size() != identifiers.size(), "Expected constant variable's value count to be equal to 1 or identifier count.");
       return VarDeclaration::make(constant, std::move(identifiers), std::move(body), line());
    }
 
-   fmt::raise_if(constant, "Expected constant variable at line {} to have initialized value.", line());
+   fmt::raise_if(line(), constant, "Expected constant variableto have initialized value.");
    return VarDeclaration::make(constant, std::move(identifiers), std::move(body), line());
 }
 
@@ -71,13 +71,13 @@ Stmt Parser::parse_del_stmt() {
 
    std::vector<Stmt> identifiers;
    auto identifier = std::move(parse_primary_expr());
-   fmt::raise_if(identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead at line {}.", stmt_type_str[int(identifier->type)], line());
+   fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead.", stmt_type_str[int(identifier->type)]);
 
    while (is(Type::comma)) {
       advance();
       identifiers.push_back(std::move(identifier));
       identifier = std::move(parse_primary_expr());
-      fmt::raise_if(identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead at line {}.", stmt_type_str[int(identifier->type)], line());
+      fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead.", stmt_type_str[int(identifier->type)]);
    }
 
    identifiers.push_back(std::move(identifier));
@@ -98,7 +98,7 @@ Stmt Parser::parse_ternary_expr() {
       advance();
 
       auto middle = parse_ternary_expr();
-      fmt::raise_if(!is(Type::colon), "Expected ':' after '{} ? {}'.", stmt_type_str[int(left->type)], stmt_type_str[int(middle->type)]);
+      fmt::raise_if(line(), !is(Type::colon), "Expected ':' after '{} ? {}'.", stmt_type_str[int(left->type)], stmt_type_str[int(middle->type)]);
       advance();
 
       auto right = parse_ternary_expr();
@@ -254,7 +254,7 @@ Stmt Parser::parse_call_expr() {
       return std::move(identifier);
    }
    auto args = parse_args_list();
-   fmt::raise_if(args->type != StmtType::args, "Expected arguments list after identifier, got '{}' instead at line {}.", stmt_type_str[int(args->type)], line());
+   fmt::raise_if(line(), args->type != StmtType::args, "Expected arguments list after identifier, got '{}' instead.", stmt_type_str[int(args->type)]);
    return CallExpr::make(std::move(args), std::move(identifier), line());
 }
 
@@ -282,7 +282,7 @@ Stmt Parser::parse_args_list() {
    }
 
    args.push_back(std::move(arg));
-   fmt::raise_if(!is(Type::r_paren), "Expected a matching ')' after argument list, got '{}' instead at line {}.", type_str[int(current().type)], line());
+   fmt::raise_if(line(), !is(Type::r_paren), "Expected a matching ')' after argument list, got '{}' instead.", type_str[int(current().type)]);
    advance();
    return ArgsListExpr::make(std::move(args), line());
 }
@@ -298,7 +298,7 @@ Stmt Parser::parse_primary_expr() {
       try {
          number = std::stold(current().lexeme);
       } catch (...) {
-         fmt::raise("Failed to convert string '{}' to number at line {}.", current().lexeme, line());
+         fmt::raise(line(), "Failed to convert string '{}' to number. Number might be too large, too small, or invalid.", current().lexeme);
       }
       advance();
       return NumberLiteral::make(number, line());
@@ -314,7 +314,7 @@ Stmt Parser::parse_primary_expr() {
       advance();
       auto value = parse_expr();
 
-      fmt::raise_if(!is(Type::r_paren), "Expected to find a matching parenthesis after '(', got '{}' instead at line {}.", type_str[int(current().type)], line());
+      fmt::raise_if(line(), !is(Type::r_paren), "Expected to find a matching parenthesis after '(', got '{}' instead.", type_str[int(current().type)]);
       advance();
       return std::move(value);
    } else if (is(Type::l_brace)) {
@@ -325,13 +325,13 @@ Stmt Parser::parse_primary_expr() {
          auto stmt = parse_expr();
          program->statements.push_back(std::move(stmt));
       }
-      fmt::raise_if(!is(Type::r_brace), "Unterminated scope at line {}.", program->line);
+      fmt::raise_if(program->line, !is(Type::r_brace), "Unterminated scope.");
       advance();
       return std::move(program);
    } else if (is(Type::keyword)) {
       return std::move(parse_stmt());
    } else {
-      fmt::raise("Expected primary expression, got '{}' instead at line {}.", type_str[int(current().type)], line());
+      fmt::raise(line(), "Expected primary expression, got '{}' instead.", type_str[int(current().type)]);
    }
 }
 

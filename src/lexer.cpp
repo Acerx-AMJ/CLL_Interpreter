@@ -20,7 +20,7 @@ std::vector<Token>& Lexer::lex() {
             line += (ch == '\n');
          }
          advance();
-         fmt::raise_if(index >= code.size(), "Unterminated block comment at line {}.", original_line);
+         fmt::raise_if(original_line, index >= code.size(), "Unterminated block comment.");
       } else if (isdigit(ch)) {
          std::string number;
          bool dot = false, last_dash = false, prefix = false, scientific = false;
@@ -48,8 +48,8 @@ std::vector<Token>& Lexer::lex() {
                   number += '.';
                } else break;
             } else if (ch == 'e' || ch == 'E') {
-               fmt::raise_if(scientific, "Expected scientific number '{}' to only contain one 'e' at line {}.", number, line);
-               fmt::raise_if(prefix, "Expected prefixed number '{}' to not be scientific at line {}.", number, line);
+               fmt::raise_if(line, scientific, "Expected scientific number '{}' to only contain one 'e'.", number);
+               fmt::raise_if(line, prefix, "Expected prefixed number '{}' to not be scientific.", number);
                scientific = true;
                number += ch;
             } else if (scientific && (ch == '-' || ch == '+') && (code.at(index - 1) == 'e' || code.at(index - 1) == 'E')) {
@@ -57,12 +57,12 @@ std::vector<Token>& Lexer::lex() {
             } else if (ch != '_') break;
 
             if (ch == '_' || ((ch == '-' || ch == '+') && (code.at(index - 1) != 'e' && code.at(index - 1) != 'E')) || ch == '.' || ch == 'e') {
-               fmt::raise_if(last_dash, "Expected number '{}' to not have two or more consecutive '_', 'e' or '.' at line {}.", number, line);
+               fmt::raise_if(line, last_dash, "Expected number '{}' to not have two or more consecutive '_', 'e' or '.'.", number);
                last_dash = true;
             }
          }
-         fmt::raise_if(last_dash, "Expected number '{}' to not end with '_', 'e' or '.' at line {}.", number, line);
-         fmt::raise_if(number.empty() && prefix, "Expected number to not only contain the prefix at line {}.", line);
+         fmt::raise_if(line, last_dash, "Expected number '{}' to not end with '_', 'e' or '.'.", number);
+         fmt::raise_if(line, number.empty() && prefix, "Expected number to not only contain the prefix.");
 
          try {
             if (scientific) {
@@ -71,7 +71,7 @@ std::vector<Token>& Lexer::lex() {
                number = std::to_string(std::stoi(number, nullptr, (bin ? 2 : (oct ? 8 : 16))));
             }
          } catch (...) {
-            fmt::raise("Prefixed number '{}' out of range at line {}.", number, line);
+            fmt::raise(line, "Prefixed number '{}' out of range.", number);
          }
 
          tokens.push_back({Type::number, (number.empty() ? "0" : number), line});
@@ -100,7 +100,7 @@ std::vector<Token>& Lexer::lex() {
             character = get_escape_code(advance());
          }
          ch = advance();
-         fmt::raise_if(ch != '\'', "Expected character to be one character long/unterminated character at line {}.", line);
+         fmt::raise_if(line, ch != '\'', "Expected character to be one character long/unterminated character.");
          tokens.push_back({Type::character, std::string(1, character), line});
       } else if (ch == '"') {
          std::string string;
@@ -112,7 +112,7 @@ std::vector<Token>& Lexer::lex() {
             }
             string += ch;
          }
-         fmt::raise_if(ch != '"', "Unterminated string at line {}.", original_line);
+         fmt::raise_if(original_line, ch != '"', "Unterminated string.");
          tokens.push_back({Type::string, string, line});
       } else {
          std::string op;
@@ -128,7 +128,7 @@ std::vector<Token>& Lexer::lex() {
             }
             op.pop_back();
          }
-         fmt::raise_if(op.empty(), "Unexpected character: '{}' at line {}.", ch, line);  
+         fmt::raise_if(line, op.empty(), "Unexpected character: '{}'.", ch);  
          index += op.size() - 1;
       }
    }
@@ -156,6 +156,6 @@ char Lexer::get_escape_code(char escape) {
       {'a', '\a'}, {'b', '\b'}, {'t', '\t'}, {'n', '\n'}, {'v', '\v'}, {'f', '\f'},
       {'r', '\r'}, {'e', '\e'}, {'\\', '\\'}, {'\'', '\''}, {'"', '"'}
    };
-   fmt::raise_if(code_map.find(escape) == code_map.end(), "Unknown escape code '\\{}' at line {}.", escape, line);
+   fmt::raise_if(line, code_map.find(escape) == code_map.end(), "Unknown escape code '\\{}'.", escape);
    return code_map[escape];
 }

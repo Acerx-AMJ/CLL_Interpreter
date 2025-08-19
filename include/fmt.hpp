@@ -1,6 +1,7 @@
 #ifndef FMT_HPP
 #define FMT_HPP
 
+#include "error.hpp"
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -88,37 +89,35 @@ namespace fmt {
    }
 
    template<typename T>
-   void println_v(std::vector<T>& args = {}) {
+   void println_v(const std::vector<T>& args = {}) {
       for (const auto& arg : args) {
          std::cout << std::boolalpha << arg << ' ';
       }
       std::cout << '\n';
    }
 
-   // Exception
-   class exception : public std::exception {
-      std::string msg;
-
-   public:
-      explicit exception(const std::string& message) {
-         msg = "Program exited due to the following error:\n\t"s + message;
-      }
-      
-      virtual const char* what() const noexcept override {
-         return msg.c_str();
-      }
-   };
-
    // Raise functions
    template<typename... Args>
-   [[noreturn]] void raise(const char* error, const Args&... args) {
-      throw fmt::exception(fmt::format(error, args...));
+   [[noreturn]] void raise(int line, const char* error, const Args&... args) {
+      err::raise(fmt::format(error, args...), line);
    }
 
    template<typename... Args>
-   void raise_if(bool cond, const char* error, const Args&... args) {
+   void raise_if(int line, bool cond, const char* error, const Args&... args) {
       if (cond) {
-         fmt::raise(error, args...);
+         fmt::raise(line, error, args...);
+      }
+   }
+
+   template<typename T>
+   [[noreturn]] void raise_v(int line, const char* error, const std::vector<T>& args = {}) {
+      err::raise(fmt::format_v(error, args), line);
+   }
+
+   template<typename T>
+   void raise_if_v(int line, bool cond, const char* error, const std::vector<T>& args = {}) {
+      if (cond) {
+         fmt::raise_v(line, error, args);
       }
    }
 }

@@ -15,6 +15,7 @@ CLL is a high-level interpreted language inspired by Python and C++ made to be c
 - - [Null](#null)
 - - [Operators](#supported-operators)
 - - [Standard Functions](#built-in-functions)
+- - [Operator Precedence](#operator-precedence)
 - - [Calling Functions](#calling-functions)
 - - [Variables](#variable-declaration)
 - - [Constants](#constant-declaration)

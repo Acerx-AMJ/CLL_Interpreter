@@ -5,12 +5,13 @@
 #include "parser.hpp"
 
 int main(int argc, char* argv[]) {
-   fmt::raise_if(argc != 2, "Expected 2 arguments, got {} instead.", argc);
+   fmt::raise_if(err::nline, argc != 2, "Expected 2 arguments, got {} instead.", argc);
    std::string code = argv[1];
 
    if (file::exists(code)) {
       code = file::read(code);
    }
+   err::set_program_code(code);
    Lexer lexer (code);
    auto& tokens = lexer.lex();
 

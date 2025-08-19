@@ -36,17 +36,17 @@ Value Interpreter::evaluate_var_decl(Stmt stmt) {
 
    for (int i = 0; i < isize; ++i) {
       Value value = (single_decl || (vsize != isize && i >= vsize) ? first->copy() : evaluate_stmt(std::move(decl.values.at(i))));
-      environment.declare_variable(get_stmt<IdentLiteral>(decl.identifiers.at(i)).identifier, std::move(value), decl.constant);
+      environment.declare_variable(get_stmt<IdentLiteral>(decl.identifiers.at(i)).identifier, std::move(value), decl.constant, decl.line);
    }
-   return NullValue::make();
+   return NullValue::make(decl.line);
 }
 
 Value Interpreter::evaluate_del_stmt(Stmt stmt) {
    auto& del = get_stmt<DeleteStmt>(stmt);
    for (const auto& identifier : del.identifiers) {
-      environment.delete_variable(get_stmt<IdentLiteral>(identifier).identifier);
+      environment.delete_variable(get_stmt<IdentLiteral>(identifier).identifier, del.line);
    }
-   return NullValue::make();
+   return NullValue::make(del.line);
 }
 
 Value Interpreter::evaluate_scope(Stmt expr) {
@@ -61,7 +61,7 @@ Value Interpreter::evaluate_scope(Stmt expr) {
 Value Interpreter::evaluate_expr(Stmt expr) {
    switch (expr->type) {
    case StmtType::args:
-      fmt::raise("Unexpected argument list while evaluating.");
+      fmt::raise(expr->line, "Unexpected argument list while evaluating.");
    case StmtType::assignment:
       return evaluate_assignment(std::move(expr));
    case StmtType::ternary:
@@ -91,6 +91,7 @@ Value Interpreter::evaluate_binary_expr(Stmt expr) {
       return (left->as_bool() ? std::move(evaluate_stmt(std::move(binary.right))) : NullValue::make());
    }
 
+   left->line = binary.line;
    auto right = evaluate_stmt(std::move(binary.right));
 
    switch (binary.op) {
@@ -107,29 +108,29 @@ Value Interpreter::evaluate_binary_expr(Stmt expr) {
    case Type::exponentiate:
       return std::move(left->exponentiate(right));
    case Type::log_and:
-      return BoolValue::make(left->as_bool() && right->as_bool());
+      return BoolValue::make(left->as_bool() && right->as_bool(), binary.line);
    case Type::log_or:
-      return BoolValue::make(left->as_bool() || right->as_bool());
+      return BoolValue::make(left->as_bool() || right->as_bool(), binary.line);
    case Type::divisible:
-      return BoolValue::make(!left->remainder(right)->as_bool());
+      return BoolValue::make(!left->remainder(right)->as_bool(), binary.line);
    case Type::equals:
-      return BoolValue::make(left->equal(right));
+      return BoolValue::make(left->equal(right), binary.line);
    case Type::really_equals:
-      return BoolValue::make(left->type == right->type && left->equal(right));
+      return BoolValue::make(left->type == right->type && left->equal(right), binary.line);
    case Type::not_equals:
-      return BoolValue::make(!left->equal(right));
+      return BoolValue::make(!left->equal(right), binary.line);
    case Type::really_not_equals:
-      return BoolValue::make(left->type != right->type || !left->equal(right));
+      return BoolValue::make(left->type != right->type || !left->equal(right), binary.line);
    case Type::greater:
-      return BoolValue::make(left->greater(right, ">"));
+      return BoolValue::make(left->greater(right, ">"), binary.line);
    case Type::greater_equal:
-      return BoolValue::make(!right->greater(left, ">="));
+      return BoolValue::make(!right->greater(left, ">="), binary.line);
    case Type::smaller:
-      return BoolValue::make(right->greater(left, "<"));
+      return BoolValue::make(right->greater(left, "<"), binary.line);
    case Type::smaller_equal:
-      return BoolValue::make(!left->greater(right, "<="));
+      return BoolValue::make(!left->greater(right, "<="), binary.line);
    default:
-      fmt::raise("Unsupported binary command '{}'.", type_str[int(binary.op)]);
+      fmt::raise(binary.line, "Unsupported binary command '{}'.", type_str[int(binary.op)]);
    }
 }
 
@@ -149,7 +150,7 @@ Value Interpreter::evaluate_unary_expr(Stmt expr) {
       if (unary.value->type == StmtType::identifier) {
          auto& ident = get_stmt<IdentLiteral>(unary.value);
          auto value = evaluate_stmt(ident.copy())->increment();
-         environment.assign_variable(ident.identifier, value->copy());
+         environment.assign_variable(ident.identifier, value->copy(), unary.line);
          return std::move(value);
       }
       auto value = evaluate_stmt(std::move(unary.value));
@@ -159,7 +160,7 @@ Value Interpreter::evaluate_unary_expr(Stmt expr) {
       if (unary.value->type == StmtType::identifier) {
          auto& ident = get_stmt<IdentLiteral>(unary.value);
          auto value = evaluate_stmt(ident.copy())->decrement();
-         environment.assign_variable(ident.identifier, value->copy());
+         environment.assign_variable(ident.identifier, value->copy(), unary.line);
          return std::move(value);
       }
       auto value = evaluate_stmt(std::move(unary.value));
@@ -167,16 +168,16 @@ Value Interpreter::evaluate_unary_expr(Stmt expr) {
    }
    case Type::log_not: {
       auto value = evaluate_stmt(std::move(unary.value));
-      return BoolValue::make(!value->as_bool());
+      return BoolValue::make(!value->as_bool(), value->line);
    }
    default:
-      fmt::raise("Unsupported unary command '{}'.", type_str[int(unary.op)]);
+      fmt::raise(unary.line, "Unsupported unary command '{}'.", type_str[int(unary.op)]);
    }
 }
 
 Value Interpreter::evaluate_assignment(Stmt expr) {
    auto& assignment = get_stmt<AssignmentExpr>(expr);
-   fmt::raise_if(assignment.left->type != StmtType::identifier, "Expected an 'IdentifierLiteral' at the left side of the '{}' operator, got '{}' instead at line {}.", type_str[int(assignment.op)], stmt_type_str[int(assignment.left->type)], assignment.left->line);
+   fmt::raise_if(assignment.left->line, assignment.left->type != StmtType::identifier, "Expected an 'IdentifierLiteral' at the left side of the '{}' operator, got '{}'.", type_str[int(assignment.op)], stmt_type_str[int(assignment.left->type)]);
    
    auto identifier = get_stmt<IdentLiteral>(assignment.left).identifier;
    auto value = evaluate_stmt(std::move(assignment.right));
@@ -185,28 +186,28 @@ Value Interpreter::evaluate_assignment(Stmt expr) {
    case Type::assign:
       break;
    case Type::plus_eq:
-      value = environment.get_variable(identifier)->add(value);
+      value = environment.get_variable(identifier, assignment.line)->add(value);
       break;
    case Type::minus_eq:
-      value = environment.get_variable(identifier)->subtract(value);
+      value = environment.get_variable(identifier, assignment.line)->subtract(value);
       break;
    case Type::multiply_eq:
-      value = environment.get_variable(identifier)->multiply(value);
+      value = environment.get_variable(identifier, assignment.line)->multiply(value);
       break;
    case Type::divide_eq:
-      value = environment.get_variable(identifier)->divide(value);
+      value = environment.get_variable(identifier, assignment.line)->divide(value);
       break;
    case Type::remainder_eq:
-      value = environment.get_variable(identifier)->remainder(value);
+      value = environment.get_variable(identifier, assignment.line)->remainder(value);
       break;
    case Type::exponentiate_eq:
-      value = environment.get_variable(identifier)->exponentiate(value);
+      value = environment.get_variable(identifier, assignment.line)->exponentiate(value);
       break;
    default:
-      fmt::raise("Unsupported assignment command '{}'.", type_str[int(assignment.op)]);
+      fmt::raise(assignment.left->line, "Unsupported assignment command '{}'.", type_str[int(assignment.op)]);
    };
 
-   environment.assign_variable(identifier, value->copy());
+   environment.assign_variable(identifier, value->copy(), assignment.line);
    return std::move(value);
 }
 
@@ -216,29 +217,29 @@ Value Interpreter::evaluate_call_expr(Stmt expr) {
    for (auto& arg : get_stmt<ArgsListExpr>(call.args).args)
       args.push_back(std::move(evaluate_stmt(std::move(arg))));
 
-   return std::move(environment.call_function(get_stmt<IdentLiteral>(call.identifier).identifier, args));
+   return std::move(environment.call_function(get_stmt<IdentLiteral>(call.identifier).identifier, args, call.line));
 }
 
 Value Interpreter::evaluate_primary_expr(Stmt expr) {
    switch (expr->type) {
    case StmtType::identifier: {
-      Value ident = IdentValue::make(get_stmt<IdentLiteral>(expr).identifier);
+      Value ident = IdentValue::make(get_stmt<IdentLiteral>(expr).identifier, expr->line);
       while (ident->type == ValueType::identifier) {
-         ident = std::move(environment.get_variable(get_value<IdentValue>(ident).identifier));
+         ident = std::move(environment.get_variable(get_value<IdentValue>(ident).identifier, ident->line));
       }
       return std::move(ident);
    }
    case StmtType::number:
-      return NumberValue::make(get_stmt<NumberLiteral>(expr).number);
+      return NumberValue::make(get_stmt<NumberLiteral>(expr).number, expr->line);
    case StmtType::character:
-      return CharValue::make(get_stmt<CharLiteral>(expr).ch);
+      return CharValue::make(get_stmt<CharLiteral>(expr).ch, expr->line);
    case StmtType::string:
-      return StringValue::make(get_stmt<StringLiteral>(expr).string);
+      return StringValue::make(get_stmt<StringLiteral>(expr).string, expr->line);
    case StmtType::null:
-      return NullValue::make();
+      return NullValue::make(expr->line);
    case StmtType::program:
       return evaluate_scope(std::move(expr));
    default:
-      fmt::raise("Unexpected expression while evaluating.");
+      fmt::raise(expr->line, "Unexpected expression while evaluating.");
    }
 }

@@ -27,8 +27,9 @@ T& get_value(Value& value) {
 
 struct ValueLiteral {
    ValueType type;
+   int line = 0;
 
-   ValueLiteral(ValueType type);
+   ValueLiteral(ValueType type, int line);
    virtual ~ValueLiteral() = default;
 
    void print() const;
@@ -54,9 +55,9 @@ struct ValueLiteral {
 struct IdentValue : public ValueLiteral {
    std::string identifier;
 
-   IdentValue(const std::string& identifier);
-   static Value make(const std::string& identifier) {
-      return std::make_unique<IdentValue>(identifier);
+   IdentValue(const std::string& identifier, int line);
+   static Value make(const std::string& identifier, int line) {
+      return std::make_unique<IdentValue>(identifier, line);
    }
 
    std::string as_string() const override;
@@ -69,9 +70,9 @@ struct IdentValue : public ValueLiteral {
 struct NumberValue : public ValueLiteral {
    long double number;
 
-   NumberValue(long double number);
-   static Value make(long double number) {
-      return std::make_unique<NumberValue>(number);
+   NumberValue(long double number, int line);
+   static Value make(long double number, int line) {
+      return std::make_unique<NumberValue>(number, line);
    }
 
    std::string as_string() const override;
@@ -84,9 +85,9 @@ struct NumberValue : public ValueLiteral {
 struct CharValue : public ValueLiteral {
    char ch;
 
-   CharValue(char ch);
-   static Value make(char ch) {
-      return std::make_unique<CharValue>(ch);
+   CharValue(char ch, int line);
+   static Value make(char ch, int line) {
+      return std::make_unique<CharValue>(ch, line);
    }
 
    std::string as_string() const override;
@@ -99,9 +100,9 @@ struct CharValue : public ValueLiteral {
 struct StringValue : public ValueLiteral {
    std::string string;
 
-   StringValue(const std::string& string);
-   static Value make(const std::string& string) {
-      return std::make_unique<StringValue>(string);
+   StringValue(const std::string& string, int line);
+   static Value make(const std::string& string, int line) {
+      return std::make_unique<StringValue>(string, line);
    }
 
    std::string as_string() const override;
@@ -114,9 +115,9 @@ struct StringValue : public ValueLiteral {
 struct BoolValue : public ValueLiteral {
    bool value;
 
-   BoolValue(bool value);
-   static Value make(bool value) {
-      return std::make_unique<BoolValue>(value);
+   BoolValue(bool value, int line);
+   static Value make(bool value, int line) {
+      return std::make_unique<BoolValue>(value, line);
    }
 
    std::string as_string() const override;
@@ -127,9 +128,9 @@ struct BoolValue : public ValueLiteral {
 };
 
 struct NullValue : public ValueLiteral {
-   NullValue();
-   static Value make() {
-      return std::make_unique<NullValue>();
+   NullValue(int line = -1);
+   static Value make(int line = -1) {
+      return std::make_unique<NullValue>(line);
    }
 
    std::string as_string() const override;

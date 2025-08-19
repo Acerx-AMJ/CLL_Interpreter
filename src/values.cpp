@@ -15,8 +15,8 @@ bool one(ValueType t1, ValueType t2, ValueType type) {
 
 // Value functions
 
-ValueLiteral::ValueLiteral(ValueType type)
-   : type(type) {}
+ValueLiteral::ValueLiteral(ValueType type, int line)
+   : type(type), line(line) {}
 
 void ValueLiteral::print() const {
    std::cout << as_string();
@@ -25,80 +25,80 @@ void ValueLiteral::print() const {
 Value ValueLiteral::negate() const {
    auto t1 = type;
    if (t1 == ValueType::number) {
-      return NumberValue::make(-as_number());
+      return NumberValue::make(-as_number(), line);
    } else if (t1 == ValueType::character) {
-      return CharValue::make(-as_char());
+      return CharValue::make(-as_char(), line);
    } else if (t1 == ValueType::null) {
-      return NullValue::make();
+      return NullValue::make(line);
    } else {
-      fmt::raise("Invalid unary operation: - '{}'.", value_type_str[int(t1)]);
+      fmt::raise(line, "Invalid unary operation: - '{}'.", value_type_str[int(t1)]);
    }
 }
 
 Value ValueLiteral::increment() const {
    auto t1 = type;
    if (t1 == ValueType::number) {
-      return NumberValue::make(as_number() + 1);
+      return NumberValue::make(as_number() + 1, line);
    } else if (t1 == ValueType::character) {
-      return CharValue::make(as_char() + 1);
+      return CharValue::make(as_char() + 1, line);
    } else if (t1 == ValueType::null) {
-      return NullValue::make();
+      return NullValue::make(line);
    } else {
-      fmt::raise("Invalid unary operation: '{}' ++.", value_type_str[int(t1)]);
+      fmt::raise(line, "Invalid unary operation: '{}' ++.", value_type_str[int(t1)]);
    }
 }
 
 Value ValueLiteral::decrement() const {
    auto t1 = type;
    if (t1 == ValueType::number) {
-      return NumberValue::make(as_number() - 1);
+      return NumberValue::make(as_number() - 1, line);
    } else if (t1 == ValueType::character) {
-      return CharValue::make(as_char() - 1);
+      return CharValue::make(as_char() - 1, line);
    } else if (t1 == ValueType::null) {
-      return NullValue::make();
+      return NullValue::make(line);
    } else {
-      fmt::raise("Invalid unary operation: '{}' --.", value_type_str[int(t1)]);
+      fmt::raise(line, "Invalid unary operation: '{}' --.", value_type_str[int(t1)]);
    }
 }
 
 Value ValueLiteral::add(Value& other) const {
    auto t1 = type, t2 = other->type;
    if (any(t1, t2, ValueType::null)) {
-      return NullValue::make();
+      return NullValue::make(line);
    } else if (any(t1, t2, ValueType::string)) {
-      return StringValue::make(as_string() + other->as_string());
+      return StringValue::make(as_string() + other->as_string(), line);
    } else if (!any(t1, t2, ValueType::identifier)) {
       if (t1 == ValueType::number) {
-         return NumberValue::make(as_number() + other->as_number());
+         return NumberValue::make(as_number() + other->as_number(), line);
       } else if (t1 == ValueType::character) {
-         return CharValue::make(as_number() + other->as_number());
+         return CharValue::make(as_number() + other->as_number(), line);
       } else {
-         return BoolValue::make(as_number() + other->as_number());
+         return BoolValue::make(as_number() + other->as_number(), line);
       }
    } else {
-      fmt::raise("Invalid binary operation: '{}' + '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
+      fmt::raise(line, "Invalid binary operation: '{}' + '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
    }
 }
 
 Value ValueLiteral::subtract(Value& other) const {
    auto t1 = type, t2 = other->type;
-   fmt::raise_if(any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' - '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
+   fmt::raise_if(line, any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' - '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
 
    if (any(t1, t2, ValueType::null)) {
-      return NullValue::make();
+      return NullValue::make(line);
    } else if (t1 == ValueType::number) {
-      return NumberValue::make(as_number() - other->as_number());
+      return NumberValue::make(as_number() - other->as_number(), line);
    } else if (t1 == ValueType::character) {
-      return CharValue::make(as_number() - other->as_number());
+      return CharValue::make(as_number() - other->as_number(), line);
    } else {
-      return BoolValue::make(as_number() - other->as_number());
+      return BoolValue::make(as_number() - other->as_number(), line);
    }
 }
 
 Value ValueLiteral::multiply(Value& other) const {
    auto t1 = type, t2 = other->type;
    if (any(t1, t2, ValueType::null)) {
-      return NullValue::make();
+      return NullValue::make(line);
    } else if (one(t1, t2, ValueType::string) && (one(t1, t2, ValueType::number) || one(t1, t2, ValueType::character) || one(t1, t2, ValueType::boolean))) {
       auto temp = (t1 == ValueType::string ? as_string() : other->as_string());
       std::string result;
@@ -106,68 +106,68 @@ Value ValueLiteral::multiply(Value& other) const {
       for (int i = 0; i < (t1 == ValueType::string ? other->as_number() : as_number()); ++i) {
          result += temp;
       }
-      return StringValue::make(result);
+      return StringValue::make(result, line);
    } else if (!any(t1, t2, ValueType::identifier) && !any(t1, t2, ValueType::string)) {
       if (t1 == ValueType::number) {
-         return NumberValue::make(as_number() * other->as_number());
+         return NumberValue::make(as_number() * other->as_number(), line);
       } else if (t1 == ValueType::character) {
-         return CharValue::make(as_number() * other->as_number());
+         return CharValue::make(as_number() * other->as_number(), line);
       } else {
-         return BoolValue::make(as_number() * other->as_number());
+         return BoolValue::make(as_number() * other->as_number(), line);
       }
    } else {
-      fmt::raise("Invalid binary operation: '{}' * '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
+      fmt::raise(line, "Invalid binary operation: '{}' * '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
    }
 }
 
 Value ValueLiteral::divide(Value& other) const {
    auto t1 = type, t2 = other->type;
-   fmt::raise_if(any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' / '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
+   fmt::raise_if(line, any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' / '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
 
    if (any(t1, t2, ValueType::null)) {
-      return NullValue::make();
+      return NullValue::make(line);
    }
    
-   fmt::raise_if(other->as_number() == 0, "Tried to divide by zero: '{}' / 0.", as_number());
+   fmt::raise_if(line, other->as_number() == 0, "Division by zero error: {} / 0.", as_number());
    if (t1 == ValueType::number) {
-      return NumberValue::make(as_number() / other->as_number());
+      return NumberValue::make(as_number() / other->as_number(), line);
    } else if (t1 == ValueType::character) {
-      return CharValue::make(as_number() / other->as_number());
+      return CharValue::make(as_number() / other->as_number(), line);
    } else {
-      return BoolValue::make(as_number() / other->as_number());
+      return BoolValue::make(as_number() / other->as_number(), line);
    }
 }
 
 Value ValueLiteral::remainder(Value& other) const {
    auto t1 = type, t2 = other->type;
-   fmt::raise_if(any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' %/%% '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
+   fmt::raise_if(line, any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' %/%% '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
 
    if (any(t1, t2, ValueType::null)) {
-      return NullValue::make();
+      return NullValue::make(line);
    }
    
-   fmt::raise_if(other->as_number() == 0, "Tried to divide by zero: '{}' %/%% 0.", as_number());
+   fmt::raise_if(line, other->as_number() == 0, "Division by zero error: {} %/%% 0.", as_number());
    if (t1 == ValueType::number) {
-      return NumberValue::make(std::remainder(as_number(), other->as_number()));
+      return NumberValue::make(std::remainder(as_number(), other->as_number()), line);
    } else if (t1 == ValueType::character) {
-      return CharValue::make(std::remainder(as_number(), other->as_number()));
+      return CharValue::make(std::remainder(as_number(), other->as_number()), line);
    } else {
-      return BoolValue::make(std::remainder(as_number(), other->as_number()));
+      return BoolValue::make(std::remainder(as_number(), other->as_number()), line);
    }
 }
 
 Value ValueLiteral::exponentiate(Value& other) const {
    auto t1 = type, t2 = other->type;
-   fmt::raise_if(any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' ** '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
+   fmt::raise_if(line, any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' ** '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
 
    if (any(t1, t2, ValueType::null)) {
-      return NullValue::make();
+      return NullValue::make(line);
    } else if (t1 == ValueType::number) {
-      return NumberValue::make(std::pow(as_number(), other->as_number()));
+      return NumberValue::make(std::pow(as_number(), other->as_number()), line);
    } else if (t1 == ValueType::character) {
-      return CharValue::make(std::pow(as_number(), other->as_number()));
+      return CharValue::make(std::pow(as_number(), other->as_number()), line);
    } else {
-      return BoolValue::make(std::pow(as_number(), other->as_number()));
+      return BoolValue::make(std::pow(as_number(), other->as_number()), line);
    }
 }
 
@@ -186,7 +186,7 @@ bool ValueLiteral::equal(Value& other) const {
 
 bool ValueLiteral::greater(Value& other, const std::string& op) const {
    auto t1 = type, t2 = other->type;
-   fmt::raise_if(any(t1, t2, ValueType::null) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' {} '{}'.", value_type_str[int(t1)], op, value_type_str[int(t2)]);
+   fmt::raise_if(line, any(t1, t2, ValueType::null) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' {} '{}'.", value_type_str[int(t1)], op, value_type_str[int(t2)]);
 
    if (any(t1, t2, ValueType::string)) {
       std::string s1 = as_string(), s2 = other->as_string();
@@ -206,33 +206,33 @@ bool ValueLiteral::greater(Value& other, const std::string& op) const {
 
 // Identifier value
 
-IdentValue::IdentValue(const std::string& identifier)
-   : identifier(identifier), ValueLiteral(ValueType::identifier) {}
+IdentValue::IdentValue(const std::string& identifier, int line)
+   : identifier(identifier), ValueLiteral(ValueType::identifier, line) {}
 
 std::string IdentValue::as_string() const {
    return std::string("[") + identifier + "]";
 }
 
 long double IdentValue::as_number() const {
-   fmt::raise("Cannot convert 'Identifier' to 'Number'.");
+   fmt::raise(line, "Cannot convert 'Identifier' to 'Number'.");
 }
 
 char IdentValue::as_char() const {
-   fmt::raise("Cannot convert 'Identifier' to 'Character'.");
+   fmt::raise(line, "Cannot convert 'Identifier' to 'Character'.");
 }
 
 bool IdentValue::as_bool() const {
-   fmt::raise("Cannot convert 'Identifier' to 'Boolean'.");
+   fmt::raise(line, "Cannot convert 'Identifier' to 'Boolean'.");
 }
 
 Value IdentValue::copy() const {
-   return IdentValue::make(identifier);
+   return IdentValue::make(identifier, line);
 }
 
 // Number value
 
-NumberValue::NumberValue(long double number)
-   : number(number), ValueLiteral(ValueType::number) {}
+NumberValue::NumberValue(long double number, int line)
+   : number(number), ValueLiteral(ValueType::number, line) {}
 
 std::string NumberValue::as_string() const {
    std::string str = std::to_string(number);
@@ -252,13 +252,13 @@ bool NumberValue::as_bool() const {
 }
 
 Value NumberValue::copy() const {
-   return NumberValue::make(number);
+   return NumberValue::make(number, line);
 }
 
 // Char value
 
-CharValue::CharValue(char ch)
-   : ch(ch), ValueLiteral(ValueType::character) {}
+CharValue::CharValue(char ch, int line)
+   : ch(ch), ValueLiteral(ValueType::character, line) {}
 
 std::string CharValue::as_string() const {
    return std::string(1, ch);
@@ -277,13 +277,13 @@ bool CharValue::as_bool() const {
 }
 
 Value CharValue::copy() const {
-   return CharValue::make(ch);
+   return CharValue::make(ch, line);
 }
 
 // String value
 
-StringValue::StringValue(const std::string& string)
-   : string(string), ValueLiteral(ValueType::string) {}
+StringValue::StringValue(const std::string& string, int line)
+   : string(string), ValueLiteral(ValueType::string, line) {}
 
 std::string StringValue::as_string() const {
    return string;
@@ -293,12 +293,12 @@ long double StringValue::as_number() const {
    try {
       return std::stold(string);
    } catch (...) {
-      fmt::raise("Could not convert string '{}' to a number.", string);
+      fmt::raise(line, "Could not convert string '{}' to a number. Number might be too large, too small, or invalid.", string);
    }
 }
 
 char StringValue::as_char() const {
-   fmt::raise_if(string.size() > 1, "Could not convert string '{}' to a character as it has too many characters.", string);
+   fmt::raise_if(line, string.size() > 1, "Could not convert string '{}' to a character as it has too many characters.", string);
    return (string.empty() ? 0 : string.at(0));
 }
 
@@ -307,13 +307,13 @@ bool StringValue::as_bool() const {
 }
 
 Value StringValue::copy() const {
-   return StringValue::make(string);
+   return StringValue::make(string, line);
 }
 
 // Boolean value
 
-BoolValue::BoolValue(bool value)
-   : value((value ? true : false)), ValueLiteral(ValueType::boolean) {}
+BoolValue::BoolValue(bool value, int line)
+   : value((value ? true : false)), ValueLiteral(ValueType::boolean, line) {}
 
 std::string BoolValue::as_string() const {
    return (value ? "true" : "false");
@@ -332,13 +332,13 @@ bool BoolValue::as_bool() const {
 }
 
 Value BoolValue::copy() const {
-   return BoolValue::make(value);
+   return BoolValue::make(value, line);
 }
 
 // Null value
 
-NullValue::NullValue()
-   : ValueLiteral(ValueType::null) {}
+NullValue::NullValue(int line)
+   : ValueLiteral(ValueType::null, line) {}
 
 std::string NullValue::as_string() const {
    return "null";
@@ -357,5 +357,5 @@ bool NullValue::as_bool() const {
 }
  
 Value NullValue::copy() const {
-   return NullValue::make();
+   return NullValue::make(line);
 }

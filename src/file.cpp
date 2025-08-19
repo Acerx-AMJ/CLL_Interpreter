@@ -12,7 +12,7 @@ namespace file {
 
    std::string read(const std::string& file) {
       std::ifstream fbuf (file);
-      fmt::raise_if(!fbuf, "Could not read file '{}'.", file);
+      fmt::raise_if(err::nline, !fbuf, "Could not read file '{}'.", file);
 
       std::string output, temp;
       while (std::getline(fbuf, temp)) {
