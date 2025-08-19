@@ -11,17 +11,11 @@ int main(int argc, char* argv[]) {
    if (file::exists(code)) {
       code = file::read(code);
    }
-
    Lexer lexer (code);
    auto& tokens = lexer.lex();
-   // for (const auto& t : tokens) {
-   //    fmt::printfln("{}: '{}' at line {}.", type_str[int(t.type)], t.lexeme, t.line);
-   // }
-   // fmt::println();
 
    Parser parser (tokens);
    auto& program = parser.parse();
-   // program.print();
 
    Environment global;
    Interpreter interpreter (program, global);

@@ -17,8 +17,14 @@ class Parser {
 
    // Expression functions
    Stmt parse_expr();
+   Stmt parse_value_or_expr();
    Stmt parse_assignment_expr();
-   
+
+   Stmt parse_logical_or_expr();
+   Stmt parse_logical_and_expr();
+   Stmt parse_equality_expr();
+   Stmt parse_relational_expr();
+
    Stmt parse_additive_expr();
    Stmt parse_multiplicative_expr();
    Stmt parse_exponentiative_expr();

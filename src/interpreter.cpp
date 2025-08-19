@@ -32,10 +32,10 @@ Value Interpreter::evaluate_var_decl(Stmt stmt) {
    size_t isize = decl.identifiers.size(), vsize = decl.values.size();
    
    bool single_decl = (vsize == 1 && isize != 1);
-   Value first (single_decl ? evaluate_expr(decl.values.at(0)->copy()) : NullValue::make());
+   Value first (single_decl ? evaluate_stmt(decl.values.at(0)->copy()) : NullValue::make());
 
    for (int i = 0; i < isize; ++i) {
-      Value value = (single_decl || (vsize != isize && i >= vsize) ? first->copy() : evaluate_expr(std::move(decl.values.at(i))));
+      Value value = (single_decl || (vsize != isize && i >= vsize) ? first->copy() : evaluate_stmt(std::move(decl.values.at(i))));
       environment.declare_variable(get_stmt<IdentLiteral>(decl.identifiers.at(i)).identifier, std::move(value), decl.constant);
    }
    return NullValue::make();
@@ -80,32 +80,36 @@ Value Interpreter::evaluate_unary_expr(Stmt expr) {
 
    switch (unary.op) {
    case Type::plus: {
-      auto value = evaluate_expr(std::move(unary.value));
+      auto value = evaluate_stmt(std::move(unary.value));
       return std::move(value);
    }
    case Type::minus: {
-      auto value = evaluate_expr(std::move(unary.value));
+      auto value = evaluate_stmt(std::move(unary.value));
       return std::move(value->negate());
    }
    case Type::increment: {
       if (unary.value->type == StmtType::identifier) {
          auto& ident = get_stmt<IdentLiteral>(unary.value);
-         auto value = environment.get_variable(ident.identifier)->increment();
+         auto value = evaluate_stmt(ident.copy())->increment();
          environment.assign_variable(ident.identifier, value->copy());
          return std::move(value);
       }
-      auto value = evaluate_expr(std::move(unary.value));
+      auto value = evaluate_stmt(std::move(unary.value));
       return std::move(value->increment());
    }
    case Type::decrement: {
       if (unary.value->type == StmtType::identifier) {
          auto& ident = get_stmt<IdentLiteral>(unary.value);
-         auto value = environment.get_variable(ident.identifier)->decrement();
+         auto value = evaluate_stmt(ident.copy())->decrement();
          environment.assign_variable(ident.identifier, value->copy());
          return std::move(value);
       }
-      auto value = evaluate_expr(std::move(unary.value));
+      auto value = evaluate_stmt(std::move(unary.value));
       return std::move(value->decrement());
+   }
+   case Type::log_not: {
+      auto value = evaluate_stmt(std::move(unary.value));
+      return BoolValue::make(!value->as_bool());
    }
    default:
       fmt::raise("Unsupported unary command '{}'.", type_str[int(unary.op)]);
@@ -114,8 +118,13 @@ Value Interpreter::evaluate_unary_expr(Stmt expr) {
 
 Value Interpreter::evaluate_binary_expr(Stmt expr) {
    auto& binary = get_stmt<BinaryExpr>(expr);
-   auto left = evaluate_expr(std::move(binary.left));
-   auto right = evaluate_expr(std::move(binary.right));
+   auto left = evaluate_stmt(std::move(binary.left));
+
+   if (binary.op == Type::binary_cond) {
+      return (left->as_bool() ? std::move(evaluate_stmt(std::move(binary.right))) : NullValue::make());
+   }
+
+   auto right = evaluate_stmt(std::move(binary.right));
 
    switch (binary.op) {
    case Type::plus:
@@ -130,6 +139,28 @@ Value Interpreter::evaluate_binary_expr(Stmt expr) {
       return std::move(left->remainder(right));
    case Type::exponentiate:
       return std::move(left->exponentiate(right));
+   case Type::log_and:
+      return BoolValue::make(left->as_bool() && right->as_bool());
+   case Type::log_or:
+      return BoolValue::make(left->as_bool() || right->as_bool());
+   case Type::divisible:
+      return BoolValue::make(!left->remainder(right)->as_bool());
+   case Type::equals:
+      return BoolValue::make(left->equal(right));
+   case Type::really_equals:
+      return BoolValue::make(left->type == right->type && left->equal(right));
+   case Type::not_equals:
+      return BoolValue::make(!left->equal(right));
+   case Type::really_not_equals:
+      return BoolValue::make(left->type != right->type || !left->equal(right));
+   case Type::greater:
+      return BoolValue::make(left->greater(right, ">"));
+   case Type::greater_equal:
+      return BoolValue::make(!right->greater(left, ">="));
+   case Type::smaller:
+      return BoolValue::make(right->greater(left, "<"));
+   case Type::smaller_equal:
+      return BoolValue::make(!left->greater(right, "<="));
    default:
       fmt::raise("Unsupported binary command '{}'.", type_str[int(binary.op)]);
    }
@@ -140,27 +171,27 @@ Value Interpreter::evaluate_assignment(Stmt expr) {
    fmt::raise_if(assignment.left->type != StmtType::identifier, "Expected an 'IdentifierLiteral' at the left side of the '{}' operator, got '{}' instead at line {}.", type_str[int(assignment.op)], stmt_type_str[int(assignment.left->type)], assignment.left->line);
    
    auto identifier = get_stmt<IdentLiteral>(assignment.left).identifier;
-   auto value = evaluate_expr(std::move(assignment.right));
+   auto value = evaluate_stmt(std::move(assignment.right));
 
    switch (assignment.op) {
-   case Type::equals:
+   case Type::assign:
       break;
-   case Type::plus_equals:
+   case Type::plus_eq:
       value = environment.get_variable(identifier)->add(value);
       break;
-   case Type::minus_equals:
+   case Type::minus_eq:
       value = environment.get_variable(identifier)->subtract(value);
       break;
-   case Type::multiply_equals:
+   case Type::multiply_eq:
       value = environment.get_variable(identifier)->multiply(value);
       break;
-   case Type::divide_equals:
+   case Type::divide_eq:
       value = environment.get_variable(identifier)->divide(value);
       break;
-   case Type::remainder_equals:
+   case Type::remainder_eq:
       value = environment.get_variable(identifier)->remainder(value);
       break;
-   case Type::exponentiate_equals:
+   case Type::exponentiate_eq:
       value = environment.get_variable(identifier)->exponentiate(value);
       break;
    default:
@@ -175,7 +206,7 @@ Value Interpreter::evaluate_call_expr(Stmt expr) {
    auto& call = get_stmt<CallExpr>(expr);
    std::vector<Value> args;
    for (auto& arg : get_stmt<ArgsListExpr>(call.args).args)
-      args.push_back(std::move(evaluate_expr(std::move(arg))));
+      args.push_back(std::move(evaluate_stmt(std::move(arg))));
 
    return std::move(environment.call_function(get_stmt<IdentLiteral>(call.identifier).identifier, args));
 }

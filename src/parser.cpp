@@ -6,7 +6,7 @@ Parser::Parser(std::vector<Token>& tokens)
 
 Program& Parser::parse() {
    while (!is(Type::eof)) {
-      program.statements.push_back(std::move(parse_stmt()));
+      program.statements.push_back(std::move(parse_expr()));
    }
    return program;
 }
@@ -21,6 +21,8 @@ Stmt Parser::parse_stmt() {
          return parse_var_decl();
       } else if (token.lexeme == "delete"s) {
          return parse_del_stmt();
+      } else {
+         fmt::raise("Unknown keyword '{}' at line {}.", token.lexeme, token.line);
       }
    }
    return parse_expr();
@@ -44,7 +46,7 @@ Stmt Parser::parse_var_decl() {
    identifiers.push_back(std::move(identifier));
    std::vector<Stmt> body;
 
-   if (is(Type::equals)) {
+   if (is(Type::assign)) {
       advance();
       auto value = std::move(parse_expr());
 
@@ -86,18 +88,83 @@ Stmt Parser::parse_del_stmt() {
 // Parse expression functions
 
 Stmt Parser::parse_expr() {
-   return parse_assignment_expr();
+   return parse_value_or_expr();
+}
+
+Stmt Parser::parse_value_or_expr() {
+   auto left = parse_assignment_expr();
+
+   while (is(Type::binary_cond)) {
+      Type op = current().type;
+      advance();
+
+      auto right = parse_value_or_expr();
+      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
+   }
+   return std::move(left);
 }
 
 Stmt Parser::parse_assignment_expr() {
-   auto left = parse_additive_expr();
+   auto left = parse_logical_or_expr();
 
-   while (is(Type::equals) || is(Type::plus_equals) || is(Type::minus_equals) || is(Type::multiply_equals) || is(Type::divide_equals) || is(Type::remainder_equals) || is(Type::exponentiate_equals)) {
+   while (is(Type::assign) || is(Type::plus_eq) || is(Type::minus_eq) || is(Type::multiply_eq) || is(Type::divide_eq) || is(Type::remainder_eq) || is(Type::exponentiate_eq)) {
       Type op = current().type;
       advance();
 
       auto right = parse_assignment_expr();
       left = AssignmentExpr::make(op, std::move(left), std::move(right), line());
+   }
+   return std::move(left);
+}
+
+Stmt Parser::parse_logical_or_expr() {
+   auto left = parse_logical_and_expr();
+
+   while (is(Type::log_or)) {
+      Type op = current().type;
+      advance();
+
+      auto right = parse_logical_and_expr();
+      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
+   }
+   return std::move(left);
+}
+
+Stmt Parser::parse_logical_and_expr() {
+   auto left = parse_equality_expr();
+
+   while (is(Type::log_and)) {
+      Type op = current().type;
+      advance();
+
+      auto right = parse_equality_expr();
+      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
+   }
+   return std::move(left);
+}
+
+Stmt Parser::parse_equality_expr() {
+   auto left = parse_relational_expr();
+
+   while (is(Type::equals) || is(Type::really_equals) || is(Type::not_equals) || is(Type::really_not_equals) || is(Type::divisible)) {
+      Type op = current().type;
+      advance();
+
+      auto right = parse_relational_expr();
+      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
+   }
+   return std::move(left);
+}
+
+Stmt Parser::parse_relational_expr() {
+   auto left = parse_additive_expr();
+
+   while (is(Type::greater) || is(Type::greater_equal) || is(Type::smaller) || is(Type::smaller_equal)) {
+      Type op = current().type;
+      advance();
+
+      auto right = parse_additive_expr();
+      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
    }
    return std::move(left);
 }
@@ -144,7 +211,7 @@ Stmt Parser::parse_exponentiative_expr() {
 Stmt Parser::parse_unary_expr() {
    std::vector<Type> ops;
 
-   while (is(Type::minus) || is(Type::plus)) {
+   while (is(Type::minus) || is(Type::plus) || is(Type::log_not)) {
       ops.push_back(current().type);
       advance();
    }
@@ -239,12 +306,14 @@ Stmt Parser::parse_primary_expr() {
       auto program = std::make_unique<Program>(line());
 
       while (!is(Type::eof) && !is(Type::r_brace)) {
-         auto stmt = parse_stmt();
+         auto stmt = parse_expr();
          program->statements.push_back(std::move(stmt));
       }
       fmt::raise_if(!is(Type::r_brace), "Unterminated scope at line {}.", program->line);
       advance();
-      return program;
+      return std::move(program);
+   } else if (is(Type::keyword)) {
+      return std::move(parse_stmt());
    } else {
       fmt::raise("Expected primary expression, got '{}' instead at line {}.", type_str[int(current().type)], line());
    }
