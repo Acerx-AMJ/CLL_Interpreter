@@ -14,8 +14,8 @@ CLL is a high-level interpreted language inspired by Python and C++ made to be c
 - - [Booleans](#booleans)
 - - [Null](#null)
 - - [Operators](#supported-operators)
-- - [Standard Functions](#built-in-functions)
 - - [Operator Precedence](#operator-precedence)
+- - [Standard Functions](#built-in-functions)
 - - [Calling Functions](#calling-functions)
 - - [Variables](#variable-declaration)
 - - [Constants](#constant-declaration)
@@ -148,24 +148,8 @@ Parentheses (`()`) can change operator precedence as follows:
 (2 + 2) * 3  // -> 12
 2 + 2 * 3  // -> 8 
 ```
-#### Built-in functions
-Built-in functions:
-- `print` - print all arguments to the terminal.
-- `println` - print all arguments to the terminal and newline.
-- `prinf` - format first argument (must be a string) with the passed in arguments. Arguments will replace '{}'.
-- `printfln` - same as `printf`, but print a newline.
-- `format` - format first argument (must be a string) with the passed in arguments and return the result.
-
-- `input` - get a string input from user. If an argument is passed in, print it.
-- `inputnum` - get a number input from user. If an argument is passed in, print it.
-- `inputch` - get a single character input from user. Does not ignore whitespace and does not wait for the enter key. If an argument is passed in, print it.
-
-- `string` - convert the first argument to a string or return a null string if no arguments.
-- `number` - attempt to convert the first argument to a string and return if successful or return 0 if no arguments.
-- `char` - attempt to convert the first argument to a character and return if successful or return 0 if no arguments.
-- `bool` - convert first argument to a boolean or return false. Empty strings, 0's and null values are false, everything else is true.
 #### Operator precedence
-the following table lists precedence and associativity of operators and expressions.
+The following table lists precedence and associativity of operators and expressions.
 |Precedence|Expression|Description|Associativity|
 |-|-|-|-|
 |1|`identifier`, `number`, `character`, `string`, `()`, `{}`, `variable declaration`, `delete statement`|Primary expressions, parentheses, scopes, statements.|Single|
@@ -185,6 +169,26 @@ the following table lists precedence and associativity of operators and expressi
 |15|`a ? b : c`|Ternary condition.|Right-to-left|
 
 Left-to-right and right-to-left associativity shows in which direction expressions get parsed. Single means that expressions cannot be chained.
+#### Built-in functions
+The following table lists all built-in functions and their expected arguments and return values.
+|Function|Arguments|Return|Description|
+|-|-|-|-|
+|`print`|(...)|`Null`|Print all arguments separated by a space.|
+|`println`|(...)|`Null`|Print all arguments separated by a space and print a newline at the end.|
+|`printf`|(`String`, ...)|`Null`|Format the string using other arguments and print it (e.g. `print("Hello, {}!", "World")` -> `Hello, World!`).|
+|`printfln`|(`String`, ...)|`Null`|Format the string using other arguments and print it, and print a newline.|
+|`format`|(`String`, ...)|`String`|Format the string using other arguments and return the result.|
+|`raise`|(`String`, ...)|`No Return`|Format the string using other arguments and raise an error at the line of the call.|
+|`assert`|(`Boolean`, `String`)|`Null`|If boolean is true, throw an error at the line of the call with the given error.|
+|`throw`|(`String`, `Number`)|`No Return`|Both arguments are optional. Throw an error at no line with the given exit code.|
+|`exit`|(`Number`)|`No Return`|Argument is optional. Exit the program with the given exit code.|
+|`input`|(`Any`)|`String`|Print argument (if any) and return user's input as string.|
+|`inputnum`|(`Any`)|`Number`|Print argument (if any) and return user's input as number.|
+|`inputch`|(`Any`)|`Character`|Print argument (if any) and return user's input as a single character.|
+|`string`|(`Any`)|`String`|Convert argument to string, or return empty string if no arguments.|
+|`number`|(`Any`)|`Number`|Convert argument to number, or return 0 if no arguments.|
+|`char`|(`Any`)|`Character`|Convert argument to character, or return 0 if no arguments.|
+|`bool`|(`Any`)|`Boolean`|Convert argument to boolean, or return false if no arguments.|
 #### Calling functions
 Functions can be called using `()` operators like so:
 ```cxx

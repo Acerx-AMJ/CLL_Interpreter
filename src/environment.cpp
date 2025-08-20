@@ -19,6 +19,11 @@ Environment::Environment()
    declare_function("printfln", fun::printfln, err::nline);
    declare_function("format", fun::format, err::nline);
 
+   declare_function("raise", fun::raise, err::nline);
+   declare_function("assert", fun::assert, err::nline);
+   declare_function("throw", fun::throw_, err::nline);
+   declare_function("exit", fun::exit, err::nline);
+
    declare_function("input", fun::input, err::nline);
    declare_function("inputnum", fun::inputnum, err::nline);
    declare_function("inputch", fun::inputch, err::nline);

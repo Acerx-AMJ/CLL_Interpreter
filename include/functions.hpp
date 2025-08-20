@@ -11,6 +11,11 @@ namespace fun {
    Value printfln(const std::vector<Value>& args, int line);
    Value format(const std::vector<Value>& args, int line);
 
+   Value raise(const std::vector<Value>& args, int line);
+   Value assert(const std::vector<Value>& args, int line);
+   Value throw_(const std::vector<Value>& args, int line);
+   Value exit(const std::vector<Value>& args, int line);
+
    Value input(const std::vector<Value>& args, int line);
    Value inputnum(const std::vector<Value>& args, int line);
    Value inputch(const std::vector<Value>& args, int line);

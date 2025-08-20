@@ -12,7 +12,7 @@ namespace fun {
          if (i + 1 < args.size())
             std::cout << ' ';
       }
-      return NullValue::make();
+      return NullValue::make(line);
    }
 
    Value println(const std::vector<Value>& args, int line) {
@@ -30,7 +30,7 @@ namespace fun {
          arguments.push_back(args.at(i)->as_string());
       }
       fmt::printf_v(base.c_str(), arguments);
-      return NullValue::make();
+      return NullValue::make(line);
    }
 
    Value printfln(const std::vector<Value>& args, int line) {
@@ -42,7 +42,7 @@ namespace fun {
          arguments.push_back(args.at(i)->as_string());
       }
       fmt::printfln_v(base.c_str(), arguments);
-      return NullValue::make();
+      return NullValue::make(line);
    }
 
    Value format(const std::vector<Value>& args, int line) {
@@ -54,6 +54,37 @@ namespace fun {
          arguments.push_back(args.at(i)->as_string());
       }
       return StringValue::make(fmt::format_v(base.c_str(), arguments), line);
+   }
+
+   // Error commands
+
+   Value raise(const std::vector<Value>& args, int line) {
+      fmt::raise_if(line, args.empty() || args.at(0)->type != ValueType::string, "'raise': Expected at least one argument and expected the first argument to be a string.");
+      std::string base = get_value<StringValue>(args.at(0)).string;
+      std::vector<std::string> arguments;
+
+      for (int i = 1; i < args.size(); ++i) {
+         arguments.push_back(args.at(i)->as_string());
+      }
+      fmt::raise_v(line, base.c_str(), arguments);
+   }
+
+   Value assert(const std::vector<Value>&args, int line) {
+      fmt::raise_if(line, args.size() != 2, "'assert': Expected two arguments.");
+      if (!args.at(0)->as_bool()) {
+         err::raise(args.at(1)->as_string(), line);
+      }
+      return NullValue::make(line);
+   }
+
+   Value throw_(const std::vector<Value>& args, int line) {
+      fmt::raise_if(line, args.size() > 2, "'throw': Expected at most two arguments.");
+      err::raise((args.empty() ? "Error thrown with no further description." : args.at(0)->as_string()), err::nline, (args.size() < 2 ? err::nline : args.at(1)->as_number()));
+   }
+
+   Value exit(const std::vector<Value>& args, int line) {
+      fmt::raise_if(line, args.size() > 1, "'exit': Expected no arguments or a single argument.");
+      err::exit((args.empty() ? 0 : args.at(0)->as_number()));
    }
 
    // Input commands
