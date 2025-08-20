@@ -11,6 +11,8 @@ class Interpreter {
    Value evaluate_stmt(Stmt stmt);
    Value evaluate_var_decl(Stmt stmt);
    Value evaluate_del_stmt(Stmt stmt);
+   Value evaluate_exists_stmt(Stmt stmt);
+   Value evaluate_if_else_stmt(Stmt stmt);
    Value evaluate_scope(Stmt stmt);
    
    Value evaluate_expr(Stmt expr);

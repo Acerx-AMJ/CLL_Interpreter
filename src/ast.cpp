@@ -35,6 +35,20 @@ Stmt VarDeclaration::copy() const {
    return VarDeclaration::make(constant, std::move(copied_identifiers), std::move(copied_values), line);
 }
 
+// Exists statement
+
+ExistsStmt::ExistsStmt(Stmt identifier, int line)
+   : identifier(std::move(identifier)), Statement(StmtType::exists, line) {}
+
+void ExistsStmt::print(int indentation) const {
+   std::cout << std::string(indentation, ' ') << "Exists Statement:\n";
+   identifier->print(indentation + 2);
+}
+
+Stmt ExistsStmt::copy() const {
+   return ExistsStmt::make(identifier->copy(), line);
+}
+
 // Delete statement
 
 DeleteStmt::DeleteStmt(std::vector<Stmt> identifiers, int line)
@@ -53,6 +67,52 @@ Stmt DeleteStmt::copy() const {
       copied_identifiers.push_back(std::move(identifier->copy()));
    }
    return DeleteStmt::make(std::move(copied_identifiers), line);
+}
+
+// If else statement
+
+IfElseStmt::IfElseStmt(Stmt ifclause, std::vector<Stmt> elifclauses, std::optional<Stmt> elseclause, int line)
+   : ifclause(std::move(ifclause)), elifclauses(std::move(elifclauses)), elseclause(std::move(elseclause)), Statement(StmtType::ifelse, line) {}
+
+void IfElseStmt::print(int indentation) const {
+   std::cout << std::string(indentation, ' ') << "If Else Statement:\n";
+   ifclause->print(indentation + 2);
+   for (const auto& elif : elifclauses) {
+      elif->print(indentation + 2);
+   }
+   if (elseclause.has_value()) {
+      elseclause.value()->print(indentation + 2);
+   }
+}
+
+Stmt IfElseStmt::copy() const {
+   std::vector<Stmt> copied_elifclauses;
+   for (const auto& elif : elifclauses) {
+      copied_elifclauses.push_back(elif->copy());
+   }
+
+   if (elseclause.has_value()) {
+      return IfElseStmt::make(ifclause->copy(), std::move(copied_elifclauses), elseclause.value()->copy(), line);
+   } else {
+      return IfElseStmt::make(ifclause->copy(), std::move(copied_elifclauses), line);
+   }
+}
+
+// If clause statement
+
+IfClauseStmt::IfClauseStmt(const std::string& keyword, Stmt expr, Stmt stmt, int line)
+   : keyword(keyword), expr(std::move(expr)), stmt(std::move(stmt)), Statement(StmtType::if_clause, line) {}
+
+void IfClauseStmt::print(int indentation) const {
+   std::cout << std::string(indentation, ' ') << keyword << ":\n";
+   if (keyword != "else"s) {
+      expr->print(indentation + 2);
+   }
+   stmt->print(indentation + 2);
+}
+
+Stmt IfClauseStmt::copy() const {
+   return IfClauseStmt::make(keyword, expr->copy(), stmt->copy(), line);
 }
 
 // Assignment expression

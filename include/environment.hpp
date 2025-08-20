@@ -19,6 +19,7 @@ public:
    void declare_variable(const std::string& identifier, Value value, bool constant, int line);
    void assign_variable(const std::string& identifier, Value value, int line);
    void delete_variable(const std::string& identifier, int line);
+   bool variable_exists(const std::string& identifier);
    Value get_variable(const std::string& identifier, int line);
    Environment& resolve_variable(const std::string& identifier, int line);
 

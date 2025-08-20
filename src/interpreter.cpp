@@ -20,6 +20,10 @@ Value Interpreter::evaluate_stmt(Stmt stmt) {
       return evaluate_var_decl(std::move(stmt));
    case StmtType::del:
       return evaluate_del_stmt(std::move(stmt));
+   case StmtType::exists:
+      return evaluate_exists_stmt(std::move(stmt));
+   case StmtType::ifelse:
+      return evaluate_if_else_stmt(std::move(stmt));
    case StmtType::program:
       return evaluate_scope(std::move(stmt));
    default:
@@ -47,6 +51,34 @@ Value Interpreter::evaluate_del_stmt(Stmt stmt) {
       environment.delete_variable(get_stmt<IdentLiteral>(identifier).identifier, del.line);
    }
    return NullValue::make(del.line);
+}
+
+Value Interpreter::evaluate_exists_stmt(Stmt stmt) {
+   auto& exists = get_stmt<ExistsStmt>(stmt);
+   auto& identifier = get_stmt<IdentLiteral>(exists.identifier);
+   return BoolValue::make(environment.variable_exists(identifier.identifier), exists.line);
+}
+
+Value Interpreter::evaluate_if_else_stmt(Stmt stmt) {
+   auto& ifelse = get_stmt<IfElseStmt>(stmt);
+   auto& ifclause = get_stmt<IfClauseStmt>(ifelse.ifclause);
+   
+   if (evaluate_stmt(std::move(ifclause.expr))->as_bool()) {
+      return evaluate_stmt(std::move(ifclause.stmt));
+   }
+
+   for (auto& elif : ifelse.elifclauses) {
+      auto& elifclause = get_stmt<IfClauseStmt>(elif);
+      if (evaluate_stmt(std::move(elifclause.expr))->as_bool()) {
+         return evaluate_stmt(std::move(elifclause.stmt));
+      }
+   }
+
+   if (ifelse.elseclause.has_value()) {
+      auto& elseclause = get_stmt<IfClauseStmt>(ifelse.elseclause.value());
+      return evaluate_stmt(std::move(elseclause.stmt));
+   }
+   return NullValue::make(ifelse.line);
 }
 
 Value Interpreter::evaluate_scope(Stmt expr) {

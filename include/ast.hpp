@@ -3,16 +3,21 @@
 
 #include "tokens.hpp"
 #include <memory>
+#include <optional>
 #include <vector>
 
 enum class StmtType : char {
-   var_decl, del, assignment, ternary, binary, unary, call, args, identifier, number, character, string, null, program
+   var_decl, exists, del, ifelse, if_clause,
+   assignment, ternary, binary, unary,
+   call, args,
+   identifier, number, character, string, null, program
 };
 
 constexpr std::string_view stmt_type_str[] {
-   "VariableDeclaration", "DeleteStatement", "AssignmentExpression", "TernaryExpression", "BinaryExpression",
-   "UnaryExpression", "CallExpression", "ArgumentListExpression", "IdentifierLiteral", "NumberLiteral",
-   "CharacterLiteral", "StringLiteral", "NullLiteral", "Program"
+   "VariableDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement",
+   "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression",
+   "CallExpression", "ArgumentListExpression",
+   "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "NullLiteral", "Program"
 };
 
 struct Statement;
@@ -53,12 +58,55 @@ struct VarDeclaration : public Statement {
    Stmt copy() const override;
 };
 
+struct ExistsStmt : public Statement {
+   Stmt identifier;
+
+   ExistsStmt(Stmt identifier, int line);
+   static Stmt make(Stmt identifier, int line) {
+      return std::make_unique<ExistsStmt>(std::move(identifier), line);
+   }
+
+   void print(int indentation) const override;
+   Stmt copy() const override;
+};
+
 struct DeleteStmt : public Statement {
    std::vector<Stmt> identifiers;
 
    DeleteStmt(std::vector<Stmt> identifiers, int line);
    static Stmt make(std::vector<Stmt> identifiers, int line) {
       return std::make_unique<DeleteStmt>(std::move(identifiers), line);
+   }
+
+   void print(int indentation) const override;
+   Stmt copy() const override;
+};
+
+struct IfElseStmt : public Statement {
+   Stmt ifclause;
+   std::vector<Stmt> elifclauses;
+   std::optional<Stmt> elseclause;
+
+   IfElseStmt(Stmt ifclause, std::vector<Stmt> elifclauses, std::optional<Stmt> elseclause, int line);
+   static Stmt make(Stmt ifclause, std::vector<Stmt> elifclauses, Stmt elseclause, int line) {
+      return std::make_unique<IfElseStmt>(std::move(ifclause), std::move(elifclauses), std::move(elseclause), line);
+   }
+   static Stmt make(Stmt ifclause, std::vector<Stmt> elifclauses, int line) {
+      return std::make_unique<IfElseStmt>(std::move(ifclause), std::move(elifclauses), std::nullopt, line);
+   }
+
+   void print(int indentation) const override;
+   Stmt copy() const override;
+};
+
+struct IfClauseStmt : public Statement {
+   std::string keyword;
+   Stmt expr;
+   Stmt stmt;
+
+   IfClauseStmt(const std::string& keyword, Stmt expr, Stmt stmt, int line);
+   static Stmt make(const std::string& keyword, Stmt expr, Stmt stmt, int line) {
+      return std::make_unique<IfClauseStmt>(keyword, std::move(expr), std::move(stmt), line);
    }
 
    void print(int indentation) const override;

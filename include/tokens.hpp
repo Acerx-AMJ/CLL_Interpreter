@@ -41,7 +41,7 @@ static std::unordered_map<std::string_view, Type> operators {
 };
 
 static std::unordered_set<std::string> keywords {
-   "let"s, "con"s, "delete"s
+   "let"s, "con"s, "delete"s, "exists"s, "if"s, "elif"s, "else"s, "do"s
 };
 
 #endif

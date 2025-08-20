@@ -55,6 +55,12 @@ void Environment::delete_variable(const std::string& identifier, int line) {
    env.variables.erase(identifier);
 }
 
+bool Environment::variable_exists(const std::string& identifier) {
+   if (variables.find(identifier) != variables.end())
+      return true;
+   return parent && parent->variable_exists(identifier);
+}
+
 Value Environment::get_variable(const std::string& identifier, int line) {
    auto& env = resolve_variable(identifier, line);
    return env.variables.at(identifier)->copy();
