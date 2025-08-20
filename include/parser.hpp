@@ -17,6 +17,10 @@ class Parser {
    Stmt parse_exists_stmt();
    Stmt parse_if_else_stmt();
    Stmt parse_if_clause();
+   Stmt parse_while_loops();
+   Stmt parse_block();
+   Stmt parse_return_stmt();
+   Stmt parse_unless_stmt(Stmt stmt);
 
    // Expression functions
    Stmt parse_expr();

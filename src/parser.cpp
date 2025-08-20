@@ -25,6 +25,18 @@ Stmt Parser::parse_stmt() {
          return parse_exists_stmt();
       } else if (token.lexeme == "if"s) {
          return parse_if_else_stmt();
+      } else if (token.lexeme == "while"s) {
+         return parse_while_loops();
+      } else if (token.lexeme == "break"s) {
+         advance();
+         return parse_unless_stmt(BreakStmt::make(line()));
+      } else if (token.lexeme == "continue"s) {
+         advance();
+         return parse_unless_stmt(ContinueStmt::make(line()));
+      } else if (token.lexeme == "return"s) {
+         return parse_return_stmt();
+      } else if (token.lexeme == "do"s) {
+         return parse_unless_stmt(parse_block());
       } else {
          fmt::raise(token.line, "Unknown keyword '{}'.", token.lexeme);
       }
@@ -93,7 +105,7 @@ Stmt Parser::parse_del_stmt() {
 
    identifiers.push_back(std::move(identifier));
    std::vector<Stmt> body;
-   return DeleteStmt::make(std::move(identifiers), line());
+   return parse_unless_stmt(DeleteStmt::make(std::move(identifiers), line()));
 }
 
 Stmt Parser::parse_if_else_stmt() {
@@ -114,23 +126,51 @@ Stmt Parser::parse_if_else_stmt() {
 
 Stmt Parser::parse_if_clause() {
    std::string keyword = current().lexeme;
-   auto expr = NullLiteral::make(line());
    advance();
 
-   if (keyword != "else"s) {
-      expr = parse_expr();
+   auto expr = (keyword == "else"s ? NullLiteral::make(line()) : parse_expr());
+   auto stmt = parse_block();
+   return IfClauseStmt::make(keyword, std::move(expr), std::move(stmt), line());
+}
+
+Stmt Parser::parse_while_loops() {
+   advance();
+
+   if (is(Type::keyword) && current().lexeme == "do"s || is(Type::l_brace)) {
+      auto stmt = parse_block();
+      return WhileStmt::make(true, NullLiteral::make(line()), std::move(stmt), line());
    }
 
+   auto expr = parse_expr();
+   auto stmt = parse_block();
+   return WhileStmt::make(false, std::move(expr), std::move(stmt), line());
+}
+
+Stmt Parser::parse_block() {
    if (is(Type::keyword) && current().lexeme == "do"s) {
       advance();
       auto program = std::make_unique<Program>(line());
       auto stmt = parse_expr();
       program->statements.push_back(std::move(stmt));
-      return IfClauseStmt::make(keyword, std::move(expr), std::move(program), line());
+      return std::move(program);
    }
-   fmt::raise_if(line(), !is(Type::l_brace), "Expected a 'do' keyword or a new scope after if clause expression.");
-   auto stmt = parse_expr();
-   return IfClauseStmt::make(keyword, std::move(expr), std::move(stmt), line());
+   fmt::raise_if(line(), !is(Type::l_brace), "Expected a 'do' keyword or a new scope.");
+   return parse_primary_expr();
+}
+
+Stmt Parser::parse_return_stmt() {
+   advance();
+   auto expr = ReturnStmt::make(parse_expr(), line());
+   return parse_unless_stmt(std::move(expr));
+}
+
+Stmt Parser::parse_unless_stmt(Stmt stmt) {
+   if (is(Type::keyword) && current().lexeme == "unless"s) {
+      advance();
+      auto expr = parse_expr();
+      return UnlessStmt::make(std::move(expr), std::move(stmt), line());
+   }
+   return std::move(stmt);
 }
 
 // Parse expression functions

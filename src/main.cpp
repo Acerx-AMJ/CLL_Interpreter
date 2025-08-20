@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
    auto& program = parser.parse();
 
    Environment global;
-   Interpreter interpreter (program, global);
-   interpreter.evaluate();
+   Interpreter interpreter;
+   interpreter.evaluate(program, global);
    return 0;
 }

@@ -1,7 +1,5 @@
 #include "ast.hpp"
 
-#include <iostream>
-
 Statement::Statement(StmtType type, int line)
    : type(type), line(line) {}
 
@@ -9,19 +7,6 @@ Statement::Statement(StmtType type, int line)
 
 VarDeclaration::VarDeclaration(bool constant, std::vector<Stmt> identifiers, std::vector<Stmt> values, int line)
    : constant(constant), identifiers(std::move(identifiers)), values(std::move(values)), Statement(StmtType::var_decl, line) {}
-
-void VarDeclaration::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << (constant ? "Constant" : "Variable") << " Declaration:\n";
-   for (size_t i = 0; i < identifiers.size(); ++i) {
-      identifiers.at(i)->print(indentation);
-
-      if (values.size() != 1 && i >= values.size()) {
-         std::cout << std::string(indentation + 2, ' ') << "null\n";
-      } else {
-         values.at(std::min(i, values.size() - 1))->print(indentation + 2);
-      }
-   }
-}
 
 Stmt VarDeclaration::copy() const {
    std::vector<Stmt> copied_identifiers, copied_values;
@@ -40,11 +25,6 @@ Stmt VarDeclaration::copy() const {
 ExistsStmt::ExistsStmt(Stmt identifier, int line)
    : identifier(std::move(identifier)), Statement(StmtType::exists, line) {}
 
-void ExistsStmt::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "Exists Statement:\n";
-   identifier->print(indentation + 2);
-}
-
 Stmt ExistsStmt::copy() const {
    return ExistsStmt::make(identifier->copy(), line);
 }
@@ -53,13 +33,6 @@ Stmt ExistsStmt::copy() const {
 
 DeleteStmt::DeleteStmt(std::vector<Stmt> identifiers, int line)
    : identifiers(std::move(identifiers)), Statement(StmtType::del, line) {}
-
-void DeleteStmt::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "Delete Statement:\n";
-   for (const auto& identifier : identifiers) {
-      identifier->print(indentation + 2);
-   }
-}
 
 Stmt DeleteStmt::copy() const {
    std::vector<Stmt> copied_identifiers;
@@ -73,17 +46,6 @@ Stmt DeleteStmt::copy() const {
 
 IfElseStmt::IfElseStmt(Stmt ifclause, std::vector<Stmt> elifclauses, std::optional<Stmt> elseclause, int line)
    : ifclause(std::move(ifclause)), elifclauses(std::move(elifclauses)), elseclause(std::move(elseclause)), Statement(StmtType::ifelse, line) {}
-
-void IfElseStmt::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "If Else Statement:\n";
-   ifclause->print(indentation + 2);
-   for (const auto& elif : elifclauses) {
-      elif->print(indentation + 2);
-   }
-   if (elseclause.has_value()) {
-      elseclause.value()->print(indentation + 2);
-   }
-}
 
 Stmt IfElseStmt::copy() const {
    std::vector<Stmt> copied_elifclauses;
@@ -103,29 +65,59 @@ Stmt IfElseStmt::copy() const {
 IfClauseStmt::IfClauseStmt(const std::string& keyword, Stmt expr, Stmt stmt, int line)
    : keyword(keyword), expr(std::move(expr)), stmt(std::move(stmt)), Statement(StmtType::if_clause, line) {}
 
-void IfClauseStmt::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << keyword << ":\n";
-   if (keyword != "else"s) {
-      expr->print(indentation + 2);
-   }
-   stmt->print(indentation + 2);
-}
-
 Stmt IfClauseStmt::copy() const {
    return IfClauseStmt::make(keyword, expr->copy(), stmt->copy(), line);
+}
+
+// While loop statement
+
+WhileStmt::WhileStmt(bool infinite, Stmt expr, Stmt stmt, int line)
+   : infinite(infinite), expr(std::move(expr)), stmt(std::move(stmt)), Statement(StmtType::while_loop, line) {}
+
+Stmt WhileStmt::copy() const {
+   return WhileStmt::make(infinite, expr->copy(), stmt->copy(), line);
+}
+
+// Break statement
+
+BreakStmt::BreakStmt(int line)
+   : Statement(StmtType::break_stmt, line) {}
+
+Stmt BreakStmt::copy() const {
+   return BreakStmt::make(line);
+}
+
+// Continue statement
+
+ContinueStmt::ContinueStmt(int line)
+   : Statement(StmtType::continue_stmt, line) {}
+
+Stmt ContinueStmt::copy() const {
+   return ContinueStmt::make(line);
+}
+
+// Return statement
+
+ReturnStmt::ReturnStmt(Stmt value, int line)
+   : value(std::move(value)), Statement(StmtType::return_stmt, line) {}
+
+Stmt ReturnStmt::copy() const {
+   return ReturnStmt::make(value->copy(), line);
+}
+
+// Unless statement
+
+UnlessStmt::UnlessStmt(Stmt expr, Stmt stmt, int line)
+   : expr(std::move(expr)), stmt(std::move(stmt)), Statement(StmtType::unless_stmt, line) {}
+
+Stmt UnlessStmt::copy() const {
+   return UnlessStmt::make(expr->copy(), stmt->copy(), line);
 }
 
 // Assignment expression
 
 AssignmentExpr::AssignmentExpr(Type op, Stmt left, Stmt right, int line)
    : op(op), left(std::move(left)), right(std::move(right)), Statement(StmtType::assignment, line) {}
-
-void AssignmentExpr::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "Assignment Expression:\n";
-   left->print(indentation + 2);
-   std::cout << std::string(indentation, ' ') << "Operator: " << type_str[int(op)] << "\n";
-   right->print(indentation + 2);
-}
 
 Stmt AssignmentExpr::copy() const {
    return AssignmentExpr::make(op, std::move(left->copy()), std::move(right->copy()), line);
@@ -136,15 +128,6 @@ Stmt AssignmentExpr::copy() const {
 TernaryExpr::TernaryExpr(Stmt left, Stmt middle, Stmt right, int line)
    : left(std::move(left)), middle(std::move(middle)), right(std::move(right)), Statement(StmtType::ternary, line) {}
 
-void TernaryExpr::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "Ternary Expression:\n";
-   left->print(indentation + 2);
-   std::cout << std::string(indentation, ' ') << "Operator: ?\n";
-   middle->print(indentation + 2);
-   std::cout << std::string(indentation, ' ') << "Operator: :\n";
-   right->print(indentation + 2);
-}
-
 Stmt TernaryExpr::copy() const {
    return TernaryExpr::make(std::move(left->copy()), std::move(middle->copy()), std::move(right->copy()), line);
 }
@@ -153,13 +136,6 @@ Stmt TernaryExpr::copy() const {
 
 BinaryExpr::BinaryExpr(Type op, Stmt left, Stmt right, int line)
    : op(op), left(std::move(left)), right(std::move(right)), Statement(StmtType::binary, line) {}
-
-void BinaryExpr::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "Binary Expression:\n";
-   left->print(indentation + 2);
-   std::cout << std::string(indentation, ' ') << "Operator: " << type_str[int(op)] << "\n";
-   right->print(indentation + 2);
-}
 
 Stmt BinaryExpr::copy() const {
    return BinaryExpr::make(op, std::move(left->copy()), std::move(right->copy()), line);
@@ -170,12 +146,6 @@ Stmt BinaryExpr::copy() const {
 UnaryExpr::UnaryExpr(Type op, Stmt value, int line)
    : op(op), value(std::move(value)), Statement(StmtType::unary, line) {}
 
-void UnaryExpr::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "Unary Expression:\n";
-   std::cout << std::string(indentation, ' ') << "Operator: " << type_str[int(op)] << "\n";
-   value->print(indentation + 2);
-}
-
 Stmt UnaryExpr::copy() const {
    return UnaryExpr::make(op, std::move(value->copy()), line);
 }
@@ -185,12 +155,6 @@ Stmt UnaryExpr::copy() const {
 CallExpr::CallExpr(Stmt args, Stmt identifier, int line)
    : args(std::move(args)), identifier(std::move(identifier)), Statement(StmtType::call, line) {}
 
-void CallExpr::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "Call Expression:\n";
-   identifier->print(indentation + 2);
-   args->print(indentation + 2);
-}
-
 Stmt CallExpr::copy() const {
    return CallExpr::make(std::move(args->copy()), std::move(identifier->copy()), line);
 }
@@ -199,13 +163,6 @@ Stmt CallExpr::copy() const {
 
 ArgsListExpr::ArgsListExpr(std::vector<Stmt> args, int line)
    : args(std::move(args)), Statement(StmtType::args, line) {}
-
-void ArgsListExpr::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "Argument List:\n";
-   for (const auto& arg : args) {
-      arg->print(indentation + 2);
-   }
-}
 
 Stmt ArgsListExpr::copy() const {
    std::vector<Stmt> copied_args;
@@ -220,10 +177,6 @@ Stmt ArgsListExpr::copy() const {
 IdentLiteral::IdentLiteral(const std::string& identifier, int line)
    : identifier(identifier), Statement(StmtType::identifier, line) {}
 
-void IdentLiteral::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "[" << identifier << "]\n";
-}
-
 Stmt IdentLiteral::copy() const {
    return IdentLiteral::make(identifier, line);
 }
@@ -232,10 +185,6 @@ Stmt IdentLiteral::copy() const {
 
 NumberLiteral::NumberLiteral(long double number, int line)
    : number(number), Statement(StmtType::number, line) {}
-
-void NumberLiteral::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << number << '\n';
-}
 
 Stmt NumberLiteral::copy() const {
    return NumberLiteral::make(number, line);
@@ -246,10 +195,6 @@ Stmt NumberLiteral::copy() const {
 CharLiteral::CharLiteral(char ch, int line)
    : ch(ch), Statement(StmtType::character, line) {}
 
-void CharLiteral::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << '\'' << ch << "'\n";
-}
-
 Stmt CharLiteral::copy() const {
    return CharLiteral::make(ch, line);
 }
@@ -258,10 +203,6 @@ Stmt CharLiteral::copy() const {
 
 StringLiteral::StringLiteral(const std::string& string, int line)
    : string(string), Statement(StmtType::string, line) {}
-
-void StringLiteral::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << '"' << string << "\"\n";
-}
 
 Stmt StringLiteral::copy() const {
    return StringLiteral::make(string, line);
@@ -272,10 +213,6 @@ Stmt StringLiteral::copy() const {
 NullLiteral::NullLiteral(int line)
    : Statement(StmtType::null, line) {}
 
-void NullLiteral::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "null\n";
-}
-
 Stmt NullLiteral::copy() const {
    return NullLiteral::make(line);
 }
@@ -284,13 +221,6 @@ Stmt NullLiteral::copy() const {
 
 Program::Program(int line)
    : Statement(StmtType::program, line) {}
-
-void Program::print(int indentation) const {
-   std::cout << std::string(indentation, ' ') << "Scope:\n";
-   for (const auto& stmt : statements) {
-      stmt->print(indentation + 2);
-   }
-}
 
 Stmt Program::copy() const {
    auto copied = std::make_unique<Program>(line);

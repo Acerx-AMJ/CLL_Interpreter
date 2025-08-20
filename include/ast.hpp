@@ -7,14 +7,16 @@
 #include <vector>
 
 enum class StmtType : char {
-   var_decl, exists, del, ifelse, if_clause,
+   var_decl, exists, del, ifelse, if_clause, while_loop,
+   break_stmt, continue_stmt, return_stmt, unless_stmt,
    assignment, ternary, binary, unary,
    call, args,
    identifier, number, character, string, null, program
 };
 
 constexpr std::string_view stmt_type_str[] {
-   "VariableDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement",
+   "VariableDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement",
+   "BreakStatement", "ContinueStatement", "ReturnStatement", "UnlessStatement",
    "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression",
    "CallExpression", "ArgumentListExpression",
    "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "NullLiteral", "Program"
@@ -39,8 +41,6 @@ struct Statement {
 
    Statement(StmtType type, int line);
    virtual ~Statement() = default;
-
-   virtual void print(int indentation) const = 0;
    virtual Stmt copy() const = 0;
 };
 
@@ -53,8 +53,6 @@ struct VarDeclaration : public Statement {
    static Stmt make(bool constant, std::vector<Stmt> identifiers, std::vector<Stmt> values, int line) {
       return std::make_unique<VarDeclaration>(constant, std::move(identifiers), std::move(values), line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -65,8 +63,6 @@ struct ExistsStmt : public Statement {
    static Stmt make(Stmt identifier, int line) {
       return std::make_unique<ExistsStmt>(std::move(identifier), line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -77,8 +73,6 @@ struct DeleteStmt : public Statement {
    static Stmt make(std::vector<Stmt> identifiers, int line) {
       return std::make_unique<DeleteStmt>(std::move(identifiers), line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -94,8 +88,6 @@ struct IfElseStmt : public Statement {
    static Stmt make(Stmt ifclause, std::vector<Stmt> elifclauses, int line) {
       return std::make_unique<IfElseStmt>(std::move(ifclause), std::move(elifclauses), std::nullopt, line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -108,8 +100,51 @@ struct IfClauseStmt : public Statement {
    static Stmt make(const std::string& keyword, Stmt expr, Stmt stmt, int line) {
       return std::make_unique<IfClauseStmt>(keyword, std::move(expr), std::move(stmt), line);
    }
+   Stmt copy() const override;
+};
 
-   void print(int indentation) const override;
+struct WhileStmt : public Statement {
+   bool infinite;
+   Stmt expr;
+   Stmt stmt;
+
+   WhileStmt(bool infinite, Stmt expr, Stmt stmt, int line);
+   static Stmt make(bool infinite, Stmt expr, Stmt stmt, int line) {
+      return std::make_unique<WhileStmt>(infinite, std::move(expr), std::move(stmt), line);
+   }
+   Stmt copy() const override;
+};
+
+struct BreakStmt : public Statement {
+   BreakStmt(int line);
+   static Stmt make(int line) { return std::make_unique<BreakStmt>(line); }
+   Stmt copy() const override;
+};
+
+struct ContinueStmt : public Statement {
+   ContinueStmt(int line);
+   static Stmt make(int line) { return std::make_unique<ContinueStmt>(line); }
+   Stmt copy() const override;
+};
+
+struct ReturnStmt : public Statement {
+   Stmt value;
+
+   ReturnStmt(Stmt value, int line);
+   static Stmt make(Stmt value, int line) {
+      return std::make_unique<ReturnStmt>(std::move(value), line);
+   }
+   Stmt copy() const override;
+};
+
+struct UnlessStmt : public Statement {
+   Stmt expr;
+   Stmt stmt;
+
+   UnlessStmt(Stmt expr, Stmt stmt, int line);
+   static Stmt make(Stmt expr, Stmt stmt, int line) {
+      return std::make_unique<UnlessStmt>(std::move(expr), std::move(stmt), line);
+   }
    Stmt copy() const override;
 };
 
@@ -122,8 +157,6 @@ struct AssignmentExpr : public Statement {
    static Stmt make(Type op, Stmt left, Stmt right, int line) {
       return std::make_unique<AssignmentExpr>(op, std::move(left), std::move(right), line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -136,8 +169,6 @@ struct TernaryExpr : public Statement {
    static Stmt make(Stmt left, Stmt middle, Stmt right, int line) {
       return std::make_unique<TernaryExpr>(std::move(left), std::move(middle), std::move(right), line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -150,8 +181,6 @@ struct BinaryExpr : public Statement {
    static Stmt make(Type op, Stmt left, Stmt right, int line) {
       return std::make_unique<BinaryExpr>(op, std::move(left), std::move(right), line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -163,8 +192,6 @@ struct UnaryExpr : public Statement {
    static Stmt make(Type op, Stmt value, int line) {
       return std::make_unique<UnaryExpr>(op, std::move(value), line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -176,8 +203,7 @@ struct CallExpr : public Statement {
    static Stmt make(Stmt args, Stmt identifier, int line) {
       return std::make_unique<CallExpr>(std::move(args), std::move(identifier), line);
    }
-   
-   void print(int indentation) const override;
+
    Stmt copy() const override;
 };
 
@@ -188,8 +214,7 @@ struct ArgsListExpr : public Statement {
    static Stmt make(std::vector<Stmt> args, int line) {
       return std::make_unique<ArgsListExpr>(std::move(args), line);
    }
-   
-   void print(int indentation) const override;
+
    Stmt copy() const override;
 };
 
@@ -200,8 +225,6 @@ struct IdentLiteral : public Statement {
    static Stmt make(const std::string& identifier, int line) {
       return std::make_unique<IdentLiteral>(identifier, line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -212,8 +235,7 @@ struct NumberLiteral : public Statement {
    static Stmt make(long double number, int line) {
       return std::make_unique<NumberLiteral>(number, line);
    }
-   
-   void print(int indentation) const override;
+
    Stmt copy() const override;
 };
 
@@ -224,8 +246,6 @@ struct CharLiteral : public Statement {
    static Stmt make(char ch, int line) {
       return std::make_unique<CharLiteral>(ch, line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -236,8 +256,6 @@ struct StringLiteral : public Statement {
    static Stmt make(const std::string& string, int line) {
       return std::make_unique<StringLiteral>(string, line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -246,8 +264,6 @@ struct NullLiteral : public Statement {
    static Stmt make(int line = 0) {
       return std::make_unique<NullLiteral>(line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
@@ -258,8 +274,6 @@ struct Program : public Statement {
    static Stmt make(int line = 0) {
       return std::make_unique<Program>(line);
    }
-
-   void print(int indentation) const override;
    Stmt copy() const override;
 };
 
