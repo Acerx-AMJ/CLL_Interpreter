@@ -7,7 +7,7 @@
 #include <vector>
 
 enum class StmtType : char {
-   var_decl, exists, del, ifelse, if_clause, while_loop,
+   var_decl, exists, del, ifelse, if_clause, while_loop, for_loop,
    break_stmt, continue_stmt, return_stmt, unless_stmt,
    assignment, ternary, binary, unary,
    call, args,
@@ -15,7 +15,7 @@ enum class StmtType : char {
 };
 
 constexpr std::string_view stmt_type_str[] {
-   "VariableDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement",
+   "VariableDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement",
    "BreakStatement", "ContinueStatement", "ReturnStatement", "UnlessStatement",
    "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression",
    "CallExpression", "ArgumentListExpression",
@@ -111,6 +111,19 @@ struct WhileStmt : public Statement {
    WhileStmt(bool infinite, Stmt expr, Stmt stmt, int line);
    static Stmt make(bool infinite, Stmt expr, Stmt stmt, int line) {
       return std::make_unique<WhileStmt>(infinite, std::move(expr), std::move(stmt), line);
+   }
+   Stmt copy() const override;
+};
+
+struct ForStmt : public Statement {
+   std::optional<Stmt> initexpr;
+   std::optional<Stmt> condition;
+   std::optional<Stmt> loopexpr;
+   Stmt stmt;
+
+   ForStmt(std::optional<Stmt> initexpr, std::optional<Stmt> condition, std::optional<Stmt> loopexpr, Stmt stmt, int line);
+   static Stmt make(std::optional<Stmt> initexpr, std::optional<Stmt> condition, std::optional<Stmt> loopexpr, Stmt stmt, int line) {
+      return std::make_unique<ForStmt>(std::move(initexpr), std::move(condition), std::move(loopexpr), std::move(stmt), line);
    }
    Stmt copy() const override;
 };

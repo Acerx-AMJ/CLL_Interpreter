@@ -78,6 +78,20 @@ Stmt WhileStmt::copy() const {
    return WhileStmt::make(infinite, expr->copy(), stmt->copy(), line);
 }
 
+// For statement
+
+ForStmt::ForStmt(std::optional<Stmt> initexpr, std::optional<Stmt> condition, std::optional<Stmt> loopexpr, Stmt stmt, int line)
+   : initexpr(std::move(initexpr)), condition(std::move(condition)), loopexpr(std::move(loopexpr)), stmt(std::move(stmt)), Statement(StmtType::for_loop, line) {}
+
+Stmt ForStmt::copy() const {
+   return ForStmt::make(
+      (initexpr.has_value() ? std::optional(initexpr.value()->copy()) : std::nullopt),
+      (condition.has_value() ? std::optional(condition.value()->copy()) : std::nullopt),
+      (loopexpr.has_value() ? std::optional(loopexpr.value()->copy()) : std::nullopt),
+      stmt->copy(), line
+   );
+}
+
 // Break statement
 
 BreakStmt::BreakStmt(int line)

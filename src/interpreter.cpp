@@ -3,9 +3,6 @@
 
 Value Interpreter::evaluate(Program& program, Environment& env) {
    Value last;
-   int id = scope_id_counter;
-   ++scope_id_counter;
-
    for (auto& ast : program.statements) {
       last = evaluate_stmt(env, std::move(ast));
 
@@ -14,8 +11,7 @@ Value Interpreter::evaluate(Program& program, Environment& env) {
          return std::move(last);
       }
 
-      if (should_continue && !loop_stack.empty() && id == loop_stack.top()) {
-         should_continue = false;
+      if (should_continue || should_break) {
          return std::move(last);
       }
    }
@@ -36,6 +32,8 @@ Value Interpreter::evaluate_stmt(Environment& env, Stmt stmt) {
       return evaluate_if_else_stmt(env, std::move(stmt));
    case StmtType::while_loop:
       return evaluate_while_loop(env, std::move(stmt));
+   case StmtType::for_loop:
+      return evaluate_for_loop(env, std::move(stmt));
    case StmtType::break_stmt:
       should_break = true;
       fmt::raise_if(stmt->line, loop_stack.empty(), "'BreakStatement' outside of a loop.");
@@ -49,10 +47,6 @@ Value Interpreter::evaluate_stmt(Environment& env, Stmt stmt) {
       return evaluate_stmt(env, std::move(get_stmt<ReturnStmt>(stmt).value));
    case StmtType::unless_stmt:
       return evaluate_unless_stmt(env, std::move(stmt));
-   case StmtType::program: {
-      Environment new_env (&env);
-      return evaluate(get_stmt<Program>(stmt), new_env);
-   }
    default:
       return evaluate_expr(env, std::move(stmt));
    }
@@ -111,9 +105,9 @@ Value Interpreter::evaluate_if_else_stmt(Environment& env, Stmt stmt) {
 Value Interpreter::evaluate_while_loop(Environment& env, Stmt stmt) {
    auto& while_stmt = get_stmt<WhileStmt>(stmt);
    Value result;
+   loop_stack.push(1);
 
    while (true) {
-      loop_stack.push(scope_id_counter);
       if (!while_stmt.infinite && !evaluate_stmt(env, while_stmt.expr->copy())->as_bool()) {
          loop_stack.pop();
          return std::move(result);
@@ -125,7 +119,43 @@ Value Interpreter::evaluate_while_loop(Environment& env, Stmt stmt) {
          loop_stack.pop();
          return std::move(result);
       }
-      loop_stack.pop();
+
+      if (should_continue) {
+         should_continue = false;
+      }
+   }
+}
+
+Value Interpreter::evaluate_for_loop(Environment& env, Stmt stmt) {
+   auto& for_stmt = get_stmt<ForStmt>(stmt);
+   Value result;
+   loop_stack.push(1);
+
+   Environment new_env (&env);
+   if (for_stmt.initexpr.has_value()) {
+      evaluate_stmt(new_env, std::move(for_stmt.initexpr.value()));
+   }
+   
+   while (true) {
+      if (for_stmt.condition.has_value() && !evaluate_stmt(new_env, for_stmt.condition.value()->copy())->as_bool()) {
+         loop_stack.pop();
+         return std::move(result);
+      }
+      result = evaluate(static_cast<Program&>(*for_stmt.stmt->copy().get()), new_env);
+
+      if (should_break) {
+         should_break = false;
+         loop_stack.pop();
+         return std::move(result);
+      }
+
+      if (should_continue) {
+         should_continue = false;
+      }
+
+      if (for_stmt.loopexpr.has_value()) {
+         evaluate_stmt(new_env, for_stmt.loopexpr.value()->copy());  
+      }
    }
 }
 
@@ -168,8 +198,15 @@ Value Interpreter::evaluate_binary_expr(Environment& env, Stmt expr) {
    auto& binary = get_stmt<BinaryExpr>(expr);
    auto left = evaluate_stmt(env, std::move(binary.left));
 
+   // Binary expressions dependant on right side value not being parsed
    if (binary.op == Type::binary_cond) {
       return (left->type == ValueType::null ? std::move(evaluate_stmt(env, std::move(binary.right))) : std::move(left));
+   } else if (binary.op == Type::log_and) {
+      // If left is false, do not evaluate right
+      return BoolValue::make((!left->as_bool() ? false : evaluate_stmt(env, std::move(binary.right))->as_bool()), binary.line);
+   } else if (binary.op == Type::log_or) {
+      // If left is true, do not evaluate right
+      return BoolValue::make((left->as_bool() ? true : evaluate_stmt(env, std::move(binary.right))->as_bool()), binary.line);
    }
 
    left->line = binary.line;
@@ -188,10 +225,6 @@ Value Interpreter::evaluate_binary_expr(Environment& env, Stmt expr) {
       return std::move(left->remainder(right));
    case Type::exponentiate:
       return std::move(left->exponentiate(right));
-   case Type::log_and:
-      return BoolValue::make(left->as_bool() && right->as_bool(), binary.line);
-   case Type::log_or:
-      return BoolValue::make(left->as_bool() || right->as_bool(), binary.line);
    case Type::divisible:
       return BoolValue::make(!left->remainder(right)->as_bool(), binary.line);
    case Type::equals:

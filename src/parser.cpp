@@ -26,7 +26,9 @@ Stmt Parser::parse_stmt() {
       } else if (token.lexeme == "if"s) {
          return parse_if_else_stmt();
       } else if (token.lexeme == "while"s) {
-         return parse_while_loops();
+         return parse_while_loop();
+      } else if (token.lexeme == "for"s) {
+         return parse_for_loop();
       } else if (token.lexeme == "break"s) {
          advance();
          return parse_unless_stmt(BreakStmt::make(line()));
@@ -119,9 +121,9 @@ Stmt Parser::parse_if_else_stmt() {
 
    if (is(Type::keyword) && current().lexeme == "else"s) {
       auto elseclause = parse_if_clause();
-      return IfElseStmt::make(std::move(ifclause), std::move(elifclauses), std::move(elseclause), line());
+      return parse_unless_stmt(IfElseStmt::make(std::move(ifclause), std::move(elifclauses), std::move(elseclause), line()));
    }
-   return IfElseStmt::make(std::move(ifclause), std::move(elifclauses), line());
+   return parse_unless_stmt(IfElseStmt::make(std::move(ifclause), std::move(elifclauses), line()));
 }
 
 Stmt Parser::parse_if_clause() {
@@ -133,7 +135,7 @@ Stmt Parser::parse_if_clause() {
    return IfClauseStmt::make(keyword, std::move(expr), std::move(stmt), line());
 }
 
-Stmt Parser::parse_while_loops() {
+Stmt Parser::parse_while_loop() {
    advance();
 
    if (is(Type::keyword) && current().lexeme == "do"s || is(Type::l_brace)) {
@@ -143,7 +145,36 @@ Stmt Parser::parse_while_loops() {
 
    auto expr = parse_expr();
    auto stmt = parse_block();
-   return WhileStmt::make(false, std::move(expr), std::move(stmt), line());
+   return parse_unless_stmt(WhileStmt::make(false, std::move(expr), std::move(stmt), line()));
+}
+
+Stmt Parser::parse_for_loop() {
+   advance();
+
+   if (is(Type::keyword) && current().lexeme == "do"s || is(Type::l_brace)) {
+      auto stmt = parse_block();
+      return ForStmt::make(std::nullopt, std::nullopt, std::nullopt, std::move(stmt), line());
+   }
+   std::optional<Stmt> initexpr = std::nullopt, condition = std::nullopt, loopexpr = std::nullopt;
+   
+   if (!is(Type::semicolon)) {
+      initexpr = std::optional(parse_expr());
+   }
+   fmt::raise_if(line(), !is(Type::semicolon), "Expected semicolon after initial for loop expression, got '{}' instead.", type_str[int(current().type)]);
+   advance();
+
+   if (!is(Type::semicolon)) {
+      condition = std::optional(parse_expr());
+   }
+   fmt::raise_if(line(), !is(Type::semicolon), "Expected semicolon after conditional for loop expression, got '{}' instead.", type_str[int(current().type)]);
+   advance();
+
+   if ((!is(Type::keyword) || current().lexeme != "do"s) && !is(Type::l_brace)) {
+      loopexpr = std::optional(parse_expr());
+   }
+
+   auto stmt = parse_block();
+   return parse_unless_stmt(ForStmt::make(std::move(initexpr), std::move(condition), std::move(loopexpr), std::move(stmt), line()));
 }
 
 Stmt Parser::parse_block() {

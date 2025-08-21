@@ -7,7 +7,6 @@
 
 class Interpreter {
    std::stack<int> loop_stack;
-   int scope_id_counter = 0;
    bool should_return = false, should_break = false, should_continue = false;
 
    Value evaluate_stmt(Environment& env, Stmt stmt);
@@ -16,6 +15,7 @@ class Interpreter {
    Value evaluate_exists_stmt(Environment& env, Stmt stmt);
    Value evaluate_if_else_stmt(Environment& env, Stmt stmt);
    Value evaluate_while_loop(Environment& env, Stmt stmt);
+   Value evaluate_for_loop(Environment& env, Stmt stmt);
    Value evaluate_unless_stmt(Environment& env, Stmt stmt);
 
    Value evaluate_expr(Environment& env, Stmt expr);

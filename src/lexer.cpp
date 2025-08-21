@@ -87,7 +87,9 @@ std::vector<Token>& Lexer::lex() {
             string += ch;
          }
 
-         if (keywords.find(string) != keywords.end()) {
+         if (auto it = keyword_operators.find(string); it != keyword_operators.end()) {
+            tokens.push_back({it->second, string, line});
+         } else if (keywords.find(string) != keywords.end()) {
             tokens.push_back({Type::keyword, string, line});
          } else {
             tokens.push_back({Type::identifier, string, line});

@@ -22,7 +22,14 @@ CLL is a high-level interpreted language inspired by Python and C++ made to be c
 - - [Shadowing](#variable-shadowing)
 - - [Assignment](#assignment)
 - - [Scope](#scopes)
-- - [Delete](#delete-statements)
+- - [Delete Statements](#delete-statements)
+- - [Exists Statements](#exists-statements)
+- - [Do Statements](#do-statements)
+- - [If Statements](#if-statements)
+- - [While Loop](#while-loop)
+- - [For Loop](#for-loop)
+- - [Break, Continue & Return](#break-continue--return)
+- - [Unless Statement](#unless)
 - - [Escape Codes](#escape-codes)
 ## Compiling
 CLL uses no dependencies and is easy to build.
@@ -109,7 +116,7 @@ Unary:
 - `+a` - do nothing.
 - `a--` - decrement `a` (only right side).
 - `a++` - increment `a` (only right side).
-- `!a` - if `a` is true, return false, else true
+- `!a` - if `a` is true, return false, else true. Same as `not` operator.
 
 Binary:
 - `a + b` - add `a` to `b`. If one or both of the values is a string, concatenate it and return string.
@@ -118,18 +125,18 @@ Binary:
 - `a / b` - divide `a` by `b`.
 - `a % b` - divide `a` by `b` and return remainder (works with real numbers: `2.50 % 2 -> 0.50`).
 - `a ** b` - exponentiate `a` to the power of `b`.
-- `a && b` - if `a` and `b` are true, return true, else false
-- `a || b` - if either `a` or `b` is true, return true, else false
-- `a %% b` - if `a` is divisible by `b`, return true, else false
-- `a ?? b` - if `a` is true, return `b`, else null
-- `a == b` - if `a` is equal to `b`, return true, else false
-- `a === b` - if `a` is equal to `b` and is the same type, return true, else false
-- `a != b` - if `a` is not equal to `b`, return true, else false
-- `a !== b` - if `a` is not equal to `b` or is not the same type, return true, else false
-- `a > b` - if `a` is greater than `b`, return true, else false
-- `a >= b` - if `a` is greater than or equal to `b`, return true, else false
-- `a < b` - if `a` is smaller than `b`, return true, else false
-- `a <= b` - if `a` is smaller than or equal to `b`, return true, else false
+- `a && b` - if `a` and `b` are true, return true, else false. Skips evaluating `b` if `a` is false. Same as `and` operator.
+- `a || b` - if either `a` or `b` is true, return true, else false. Skips evaluating `b` is `a` is true. Same as `or` operator.
+- `a %% b` - if `a` is divisible by `b`, return true, else false.
+- `a ?? b` - if `a` is true, return `b`, else null.
+- `a == b` - if `a` is equal to `b`, return true, else false.
+- `a === b` - if `a` is equal to `b` and is the same type, return true, else false.
+- `a != b` - if `a` is not equal to `b`, return true, else false.
+- `a !== b` - if `a` is not equal to `b` or is not the same type, return true, else false.
+- `a > b` - if `a` is greater than `b`, return true, else false.
+- `a >= b` - if `a` is greater than or equal to `b`, return true, else false.
+- `a < b` - if `a` is smaller than `b`, return true, else false.
+- `a <= b` - if `a` is smaller than or equal to `b`, return true, else false.
 
 Ternary:
 - `a ? b : c` - if a is true, return b, else c
@@ -290,6 +297,221 @@ let x, y, z = 1, 2, x + y
 delete x, y
 // x and y do not exist anymore, while z is fine to use
 println(z)
+```
+#### Exists statements
+It is possible to check if a variable exists using `exists` keyword. It returns true if the given variable exists, false otherwise.
+```cxx
+let x
+println(exists x, exists y)  // -> true false
+delete x
+
+let y
+{
+   let z
+}
+println(exists x, exists y, exists z)  // -> false true false
+```
+Note that the following code is valid and may be more readable to some:
+```cxx
+println(exists(x), exists(y))
+```
+#### Do statements
+Do statements simply execute a single statement after them. They might seem useless, but are really useful in `unless`, `if`, `while`, etc. statements that are covered later on.
+```cxx
+let x = 10
+do x = 20
+println(x)  // -> 20
+
+do {
+   let y = 20
+   x += y
+}
+println(x)  // -> 40
+```
+Do note that even if a new scope is not defined, `do` statements create a new scope:
+```cxx
+do let x = 20
+println(exists x)  // -> false
+```
+Also note that `do` statements that do not execute a scope can only execute a single statement:
+```cxx
+do let y = 0 println(y)  // ERROR: Y is not defined in the give scope 
+```
+#### If statements
+If statements use the following syntax:
+```cxx
+if condition {
+   statements
+} elif condition {
+   statements
+} elif condition {
+   statements
+} else {
+   statements
+}
+```
+An if statement can have a single if clause, infinite optional elif clauses and a single optional else clause. If statements cannot start with elif clauses or else clauses. If condition is false, program will check the next clause until a condition is true, or until it checks everything. In the case that every condition is false and an else clause is present, it will be executed.
+
+This is where `do` statements come in handy:
+```cxx
+let x, y = true, false
+if x && y do
+   println("Both X and Y are true!")
+elif x do
+   println("Only X is true!")
+elif y do
+   println("Only Y is true!")
+else do
+   println("None are true!")
+```
+Do not that the following code is valid:
+```cxx
+if true do {
+   println("True!")
+}
+```
+And that the following is not valid:
+```cxx
+if true do
+   println("True!")
+   println("True!")
+```
+#### While loop
+While loop statement follows this syntax:
+```cxx
+while condition {
+
+}
+```
+While loop will keep executing statements until condition is false. Just like in if statements, `do` keyword can be used here:
+```cxx
+let i = 10
+while i-- > 0 do
+   println(i)
+```
+To create an infinite loop, the condition can be left out:
+```cxx
+while {
+
+}
+```
+#### For loop
+For loops use the following syntax:
+```cxx
+for stmt; condition; stmt {
+
+}
+```
+First statement will be executed on loop creation, condition is checked at the beginning of the loop and the second statement is executed at the end of the loop. The following code prints numbers 1-10 including:
+```cxx
+for let i = 1; i <= 10; i++ do
+   println(i)
+```
+The three statements inside the for loop declaration and the scope after the for loop use the same scope.
+
+Statements and the condition can be left out, but the semicolons must stay, so the program knows which statement is which.
+```cxx
+let i = 1
+for ; i <= 10; do
+   println(i++)
+```
+Infinite loop can be created like so:
+```cxx
+for ;; {
+
+}
+// Semicolons are fine to ommit in this case
+for {
+
+}
+```
+#### Break, continue & return
+It is possible to break out of a loop using `break` keyword:
+```cxx
+while {
+   // Get user input
+   let ch = inputch()
+
+   if ch == 'y' do
+      break
+}
+println("Broke!")
+```
+Break statements, of course, only break out of the current loop they are in:
+```cxx
+for let i = 0;; i++ {
+   for let j = 0;; j++ {
+      print(i, j, ' ')
+      if j == 5 do
+         break
+   }
+
+   println()
+   if i == 5 do
+      break
+}
+```
+A single iteration of a loop can be skipped using the `continue` keyword:
+```cxx
+for let i = 0; i < 100; i++ {
+   if i %% 2 do
+      continue
+   println(i)
+}
+```
+Continue statements also only target the most recent loop. Both statements ignore any other scopes than loops.
+
+Values can be returned early from scopes using the `return` keyword:
+```cxx
+let x = {
+   return 10
+   println("This will not print!")
+}
+printfln("X is {}.", x)
+```
+Currently, return statements only return to the latest scope, so they don't work under if statements. For that, there is the `unless` statement.
+
+Return statements must return something, if no value should be returned, null must be used:
+```cxx
+return null
+```
+#### Unless
+Do, break, continue, return, delete, for, while and if statements can be ignored based on a condition with the `unless` keyword:
+```cxx
+do statement unless condition
+break unless condition
+continue unless condition
+return value unless condition
+delete identifier unless condition
+
+for stmt1; condition; stmt2 {
+
+} unless condition
+
+while condition {
+
+} unless condition
+
+if condition {
+
+} elif condition {
+
+} else condition {
+
+} unless condition
+```
+In the case that condition is false, the whole statement is skipped. Try running this and then changing x to false:
+```cxx
+let y = inputnum()
+let x = true
+
+if y == 0 do
+   println("y is zero")
+elif y > 0 do
+   println("y is positive")
+else do
+   println("y is negative")
+unless x
 ```
 #### Escape codes
 Supported escape codes:
