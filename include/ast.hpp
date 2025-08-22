@@ -60,11 +60,12 @@ struct FnDeclaration : public Statement {
    Stmt identifier;
    std::vector<Stmt> arguments;
    Stmt returns;
+   Stmt return_def;
    Stmt body;
 
-   FnDeclaration(Stmt identifier, std::vector<Stmt> arguments, Stmt returns, Stmt body, int line);
-   static Stmt make(Stmt identifier, std::vector<Stmt> arguments, Stmt returns, Stmt body, int line) {
-      return std::make_unique<FnDeclaration>(std::move(identifier), std::move(arguments), std::move(returns), std::move(body), line);
+   FnDeclaration(Stmt identifier, std::vector<Stmt> arguments, Stmt returns, Stmt return_def, Stmt body, int line);
+   static Stmt make(Stmt identifier, std::vector<Stmt> arguments, Stmt returns, Stmt return_def, Stmt body, int line) {
+      return std::make_unique<FnDeclaration>(std::move(identifier), std::move(arguments), std::move(returns), std::move(return_def), std::move(body), line);
    }
    Stmt copy() const override;
 };

@@ -71,7 +71,18 @@ Value Interpreter::evaluate_var_decl(Environment& env, Stmt stmt) {
 Value Interpreter::evaluate_fn_decl(Environment& env, Stmt stmt) {
    auto& decl = get_stmt<FnDeclaration>(stmt);
    auto identifier = get_stmt<IdentLiteral>(decl.identifier);
-   auto func = Function::make(identifier.identifier, {}, "", &env, std::move(decl.body), decl.line);
+
+   std::string returns;
+   if (decl.returns->type == StmtType::identifier) {
+      returns = get_stmt<IdentLiteral>(decl.returns).identifier;
+   }
+
+   Value return_def = NullValue::make(decl.line);
+   if (decl.return_def->type != StmtType::null) {
+      return_def = evaluate_stmt(env, std::move(decl.return_def));
+   }
+
+   auto func = Function::make(identifier.identifier, {}, returns, std::move(return_def), &env, std::move(decl.body), decl.line);
 
    env.declare_variable(identifier.identifier, std::move(func), true, decl.line);
    return NullValue::make(decl.line);
@@ -382,7 +393,15 @@ Value Interpreter::call_function(Environment& env, Value func, const std::vector
    } else if (func->type == ValueType::fn) {
       auto& fn = get_value<Function>(func);
       fmt::raise_if(fn.line, args.size() != fn.parameters.size(), "Expected 'CallExpression' argument count to match function declaration parameter count. {} != {}.", args.size(), fn.parameters.size());
-      return evaluate_stmt(*fn.env, fn.body->copy());
+
+      Environment new_env (fn.env);
+      if (!fn.returns.empty()) {
+         new_env.declare_variable(fn.returns, fn.return_def->copy(), false, fn.line);
+      }
+
+      // Dirty solution to getting a copy of a program
+      auto body_ptr = fn.body->copy();
+      return evaluate(static_cast<Program&>(*body_ptr.get()), new_env);
    } else {
       fmt::raise(line, "Attempted to call '{}', but only 'NativeFunction' and 'Function' are callable.", value_type_str[int(func->type)]);
    }

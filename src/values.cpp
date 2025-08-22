@@ -363,8 +363,8 @@ Value NativeFn::copy() const {
 
 // Function
 
-Function::Function(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Environment* env, Stmt body, int line)
-   : identifier(identifier), parameters(parameters), returns(returns), env(env), body(std::move(body)), ValueLiteral(ValueType::fn, line) {}
+Function::Function(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Value return_def, Environment* env, Stmt body, int line)
+   : identifier(identifier), parameters(parameters), returns(returns), return_def(std::move(return_def)), env(env), body(std::move(body)), ValueLiteral(ValueType::fn, line) {}
 
 std::string Function::as_string() const {
    return identifier;
@@ -383,7 +383,7 @@ bool Function::as_bool() const {
 }
 
 Value Function::copy() const {
-   return Function::make(identifier, parameters, returns, env, body->copy(), line);
+   return Function::make(identifier, parameters, returns, return_def->copy(), env, body->copy(), line);
 }
 
 // Null value

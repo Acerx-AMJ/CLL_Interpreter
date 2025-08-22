@@ -152,12 +152,13 @@ struct Function : public ValueLiteral {
    std::string identifier;
    std::vector<std::string> parameters;
    std::string returns;
+   Value return_def;
    Environment* env;
    Stmt body;
 
-   Function(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Environment* env, Stmt body, int line);
-   static Value make(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Environment* env, Stmt body, int line) {
-      return std::make_unique<Function>(identifier, parameters, returns, env, std::move(body), line);
+   Function(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Value return_def, Environment* env, Stmt body, int line);
+   static Value make(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Value return_def, Environment* env, Stmt body, int line) {
+      return std::make_unique<Function>(identifier, parameters, returns, std::move(return_def), env, std::move(body), line);
    }
 
    std::string as_string() const override;

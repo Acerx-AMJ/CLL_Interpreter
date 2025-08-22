@@ -101,11 +101,22 @@ Stmt Parser::parse_fn_decl() {
    fmt::raise_if(line(), !is(Type::r_paren), "Expected ')' after '('/parameter list, got '{}' instead.", type_str[int(current().type)]);
    advance();
 
-   // For now skip returns
    auto returns = NullLiteral::make(line());
+   auto return_def = NullLiteral::make(line());
+
+   if (is(Type::arrow)) {
+      advance();
+      returns = parse_primary_expr();
+      fmt::raise_if(line(), returns->type != StmtType::identifier, "Expected 'IdentifierLiteral' after '->', got '{}' instead.", stmt_type_str[int(returns->type)]);
+
+      if (is(Type::assign)) {
+         advance();
+         return_def = parse_expr();
+      }
+   }
 
    auto body = parse_block();
-   return parse_unless_stmt(FnDeclaration::make(std::move(identifier), std::move(arguments), std::move(returns), std::move(body), original_line));
+   return parse_unless_stmt(FnDeclaration::make(std::move(identifier), std::move(arguments), std::move(returns), std::move(return_def), std::move(body), original_line));
 }
 
 Stmt Parser::parse_exists_stmt() {
@@ -125,7 +136,7 @@ Stmt Parser::parse_del_stmt() {
    while (is(Type::comma)) {
       advance();
       identifiers.push_back(std::move(identifier));
-      identifier = std::move(parse_primary_expr());
+      identifier = parse_primary_expr();
       fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead.", stmt_type_str[int(identifier->type)]);
    }
 
