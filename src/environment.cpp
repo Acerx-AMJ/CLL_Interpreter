@@ -9,29 +9,29 @@ Environment::Environment(Environment* parent)
 Environment::Environment()
    : parent(nullptr)
 {
-   declare_variable("null", std::make_unique<NullValue>(err::nline), true, err::nline);
-   declare_variable("true", std::make_unique<BoolValue>(true, err::nline), true, err::nline);
-   declare_variable("false", std::make_unique<BoolValue>(false, err::nline), true, err::nline);
+   declare_variable("null"s, NullValue::make(err::nline), true, err::nline);
+   declare_variable("true"s, BoolValue::make(true, err::nline), true, err::nline);
+   declare_variable("false"s, BoolValue::make(false, err::nline), true, err::nline);
 
-   declare_function("print", fun::print, err::nline);
-   declare_function("println", fun::println, err::nline);
-   declare_function("printf", fun::printf, err::nline);
-   declare_function("printfln", fun::printfln, err::nline);
-   declare_function("format", fun::format, err::nline);
+   declare_variable("print"s, NativeFn::make(fun::print, "print"s, err::nline), true, err::nline);
+   declare_variable("println"s, NativeFn::make(fun::println, "println"s, err::nline), true, err::nline);
+   declare_variable("printf"s, NativeFn::make(fun::printf, "printf"s, err::nline), true, err::nline);
+   declare_variable("printfln"s, NativeFn::make(fun::printfln, "printfln"s, err::nline), true, err::nline);
+   declare_variable("format"s, NativeFn::make(fun::format, "format"s, err::nline), true, err::nline);
 
-   declare_function("raise", fun::raise, err::nline);
-   declare_function("assert", fun::assert, err::nline);
-   declare_function("throw", fun::throw_, err::nline);
-   declare_function("exit", fun::exit, err::nline);
+   declare_variable("raise"s, NativeFn::make(fun::raise, "raise"s, err::nline), true, err::nline);
+   declare_variable("assert"s, NativeFn::make(fun::assert, "assert"s, err::nline), true, err::nline);
+   declare_variable("throw"s, NativeFn::make(fun::throw_, "throw"s, err::nline), true, err::nline);
+   declare_variable("exit"s, NativeFn::make(fun::exit, "exit"s, err::nline), true, err::nline);
 
-   declare_function("input", fun::input, err::nline);
-   declare_function("inputnum", fun::inputnum, err::nline);
-   declare_function("inputch", fun::inputch, err::nline);
+   declare_variable("input"s, NativeFn::make(fun::input, "input"s, err::nline), true, err::nline);
+   declare_variable("inputnum"s, NativeFn::make(fun::inputnum, "inputnum"s, err::nline), true, err::nline);
+   declare_variable("inputch"s, NativeFn::make(fun::inputch, "inputch"s, err::nline), true, err::nline);
 
-   declare_function("string", fun::string, err::nline);
-   declare_function("number", fun::number, err::nline);
-   declare_function("char", fun::char_, err::nline);
-   declare_function("bool", fun::bool_, err::nline);
+   declare_variable("string"s, NativeFn::make(fun::string, "string"s, err::nline), true, err::nline);
+   declare_variable("number"s, NativeFn::make(fun::number, "number"s, err::nline), true, err::nline);
+   declare_variable("char"s, NativeFn::make(fun::char_, "char"s, err::nline), true, err::nline);
+   declare_variable("bool"s, NativeFn::make(fun::bool_, "bool"s, err::nline), true, err::nline);
 }
 
 void Environment::declare_variable(const std::string& identifier, Value value, bool constant, int line) {
@@ -72,22 +72,4 @@ Environment& Environment::resolve_variable(const std::string& identifier, int li
    
    fmt::raise_if(line, !parent, "Variable '{}' does not exist in the given scope.", identifier);
    return parent->resolve_variable(identifier, line);
-}
-
-void Environment::declare_function(const std::string& identifier, const std::function<Value(const std::vector<Value>&, int)>& function, int line) {
-   fmt::raise_if(line, functions.find(identifier) != functions.end(), "Function '{}' is already defined in the current scope.", identifier);
-   functions.insert({identifier, function});
-}
-
-Value Environment::call_function(const std::string& identifier, const std::vector<Value>& args, int line) {
-   auto& env = resolve_function(identifier, line);
-   return env.functions.at(identifier)(args, line);
-}
-
-Environment& Environment::resolve_function(const std::string& identifier, int line) {
-   if (functions.find(identifier) != functions.end())
-      return *this;
-   
-   fmt::raise_if(line, !parent, "Function '{}' does not exist in the given scope.", identifier);
-   return parent->resolve_function(identifier, line);
 }

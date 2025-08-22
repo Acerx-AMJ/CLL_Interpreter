@@ -24,6 +24,8 @@ Value Interpreter::evaluate_stmt(Environment& env, Stmt stmt) {
    switch (stmt->type) {
    case StmtType::var_decl:
       return evaluate_var_decl(env, std::move(stmt));
+   case StmtType::fn_decl:
+      return evaluate_fn_decl(env, std::move(stmt));
    case StmtType::del:
       return evaluate_del_stmt(env, std::move(stmt));
    case StmtType::exists:
@@ -63,6 +65,15 @@ Value Interpreter::evaluate_var_decl(Environment& env, Stmt stmt) {
       Value value = (single_decl || (vsize != isize && i >= vsize) ? first->copy() : evaluate_stmt(env, std::move(decl.values.at(i))));
       env.declare_variable(get_stmt<IdentLiteral>(decl.identifiers.at(i)).identifier, std::move(value), decl.constant, decl.line);
    }
+   return NullValue::make(decl.line);
+}
+
+Value Interpreter::evaluate_fn_decl(Environment& env, Stmt stmt) {
+   auto& decl = get_stmt<FnDeclaration>(stmt);
+   auto identifier = get_stmt<IdentLiteral>(decl.identifier);
+   auto func = Function::make(identifier.identifier, {}, "", &env, std::move(decl.body), decl.line);
+
+   env.declare_variable(identifier.identifier, std::move(func), true, decl.line);
    return NullValue::make(decl.line);
 }
 
@@ -331,7 +342,11 @@ Value Interpreter::evaluate_call_expr(Environment& env, Stmt expr) {
    for (auto& arg : get_stmt<ArgsListExpr>(call.args).args)
       args.push_back(std::move(evaluate_stmt(env, std::move(arg))));
 
-   return std::move(env.call_function(get_stmt<IdentLiteral>(call.identifier).identifier, args, call.line));
+   if (call.identifier->type != StmtType::identifier) {
+      return call_function(env, evaluate_call_expr(env, std::move(call.identifier)), args, call.line);
+   } else {
+      return call_function(env, env.get_variable(get_stmt<IdentLiteral>(call.identifier).identifier, call.line), args, call.line);
+   }
 }
 
 Value Interpreter::evaluate_primary_expr(Environment& env, Stmt expr) {
@@ -356,6 +371,19 @@ Value Interpreter::evaluate_primary_expr(Environment& env, Stmt expr) {
       return evaluate(get_stmt<Program>(expr), new_env);
    }
    default:
-      fmt::raise(expr->line, "Unexpected expression while evaluating.");
+      fmt::raise(expr->line, "Unexpected expression while evaluating: '{}'.", stmt_type_str[int(expr->type)]);
+   }
+}
+
+Value Interpreter::call_function(Environment& env, Value func, const std::vector<Value>& args, int line) {
+   if (func->type == ValueType::native_fn) {
+      auto& native = get_value<NativeFn>(func);
+      return native.call(args, line);
+   } else if (func->type == ValueType::fn) {
+      auto& fn = get_value<Function>(func);
+      fmt::raise_if(fn.line, args.size() != fn.parameters.size(), "Expected 'CallExpression' argument count to match function declaration parameter count. {} != {}.", args.size(), fn.parameters.size());
+      return evaluate_stmt(*fn.env, fn.body->copy());
+   } else {
+      fmt::raise(line, "Attempted to call '{}', but only 'NativeFunction' and 'Function' are callable.", value_type_str[int(func->type)]);
    }
 }

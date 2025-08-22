@@ -20,6 +20,19 @@ Stmt VarDeclaration::copy() const {
    return VarDeclaration::make(constant, std::move(copied_identifiers), std::move(copied_values), line);
 }
 
+// Function declaration
+
+FnDeclaration::FnDeclaration(Stmt identifier, std::vector<Stmt> arguments, Stmt returns, Stmt body, int line)
+   : identifier(std::move(identifier)), arguments(std::move(arguments)),  returns(std::move(returns)), body(std::move(body)), Statement(StmtType::fn_decl, line) {}
+
+Stmt FnDeclaration::copy() const {
+   std::vector<Stmt> copied_args;
+   for (const auto& arg : arguments) {
+      copied_args.push_back(arg->copy());
+   }
+   return FnDeclaration::make(identifier->copy(), std::move(copied_args), returns->copy(), body->copy(), line);
+}
+
 // Exists statement
 
 ExistsStmt::ExistsStmt(Stmt identifier, int line)

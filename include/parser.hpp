@@ -13,6 +13,7 @@ class Parser {
    // Statement functions
    Stmt parse_stmt();
    Stmt parse_var_decl();
+   Stmt parse_fn_decl();
    Stmt parse_del_stmt();
    Stmt parse_exists_stmt();
    Stmt parse_if_else_stmt();

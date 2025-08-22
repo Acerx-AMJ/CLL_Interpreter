@@ -1,4 +1,5 @@
 #include "values.hpp"
+
 #include "fmt.hpp"
 #include <cmath>
 #include <iostream>
@@ -333,6 +334,56 @@ bool BoolValue::as_bool() const {
 
 Value BoolValue::copy() const {
    return BoolValue::make(value, line);
+}
+
+// Native function
+
+NativeFn::NativeFn(const Func& call, const std::string& identifier, int line)
+   : call(call), identifier(identifier), ValueLiteral(ValueType::native_fn, line) {}
+
+std::string NativeFn::as_string() const {
+   return identifier;
+}
+
+long double NativeFn::as_number() const {
+   fmt::raise(line, "Cannot convert 'NativeFunction' to 'Number'.");
+}
+
+char NativeFn::as_char() const {
+   fmt::raise(line, "Cannot convert 'NativeFunction' to 'Character'.");
+}
+
+bool NativeFn::as_bool() const {
+   fmt::raise(line, "Cannot convert 'NativeFunction' to 'Boolean'.");
+}
+
+Value NativeFn::copy() const {
+   return NativeFn::make(call, identifier, line);
+}
+
+// Function
+
+Function::Function(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Environment* env, Stmt body, int line)
+   : identifier(identifier), parameters(parameters), returns(returns), env(env), body(std::move(body)), ValueLiteral(ValueType::fn, line) {}
+
+std::string Function::as_string() const {
+   return identifier;
+}
+
+long double Function::as_number() const {
+   fmt::raise(line, "Cannot convert 'Function' to 'Number'.");
+}
+
+char Function::as_char() const {
+   fmt::raise(line, "Cannot convert 'Function' to 'Character'.");
+}
+
+bool Function::as_bool() const {
+   fmt::raise(line, "Cannot convert 'Function' to 'Boolean'.");
+}
+
+Value Function::copy() const {
+   return Function::make(identifier, parameters, returns, env, body->copy(), line);
 }
 
 // Null value

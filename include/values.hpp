@@ -1,15 +1,17 @@
 #ifndef VALUES_HPP
 #define VALUES_HPP
 
+#include "ast.hpp"
+#include <functional>
 #include <memory>
 #include <string>
 
 enum class ValueType : char {
-   identifier, number, character, string, boolean, null
+   identifier, number, character, string, boolean, native_fn, fn, null
 };
 
 constexpr std::string_view value_type_str[] {
-   "Identifier", "Number", "Character", "String", "Boolean", "Null"   
+   "Identifier", "Number", "Character", "String", "Boolean", "NativeFunction", "Function", "Null"   
 };
 
 struct ValueLiteral;
@@ -118,6 +120,44 @@ struct BoolValue : public ValueLiteral {
    BoolValue(bool value, int line);
    static Value make(bool value, int line) {
       return std::make_unique<BoolValue>(value, line);
+   }
+
+   std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
+   bool as_bool() const override;
+   Value copy() const override;
+};
+
+struct NativeFn : public ValueLiteral {
+   using Func = std::function<Value(const std::vector<Value>&, int)>;
+   Func call;
+   std::string identifier;
+
+   NativeFn(const Func& call, const std::string& identifier, int line);
+   static Value make(const Func& call, const std::string& identifier, int line) {
+      return std::make_unique<NativeFn>(call, identifier, line);
+   }
+
+   std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
+   bool as_bool() const override;
+   Value copy() const override;
+};
+
+class Environment;
+
+struct Function : public ValueLiteral {
+   std::string identifier;
+   std::vector<std::string> parameters;
+   std::string returns;
+   Environment* env;
+   Stmt body;
+
+   Function(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Environment* env, Stmt body, int line);
+   static Value make(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Environment* env, Stmt body, int line) {
+      return std::make_unique<Function>(identifier, parameters, returns, env, std::move(body), line);
    }
 
    std::string as_string() const override;

@@ -7,7 +7,7 @@
 #include <vector>
 
 enum class StmtType : char {
-   var_decl, exists, del, ifelse, if_clause, while_loop, for_loop,
+   var_decl, fn_decl, exists, del, ifelse, if_clause, while_loop, for_loop,
    break_stmt, continue_stmt, return_stmt, unless_stmt,
    assignment, ternary, binary, unary,
    call, args,
@@ -15,7 +15,7 @@ enum class StmtType : char {
 };
 
 constexpr std::string_view stmt_type_str[] {
-   "VariableDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement",
+   "VariableDeclaration", "FunctionDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement",
    "BreakStatement", "ContinueStatement", "ReturnStatement", "UnlessStatement",
    "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression",
    "CallExpression", "ArgumentListExpression",
@@ -52,6 +52,19 @@ struct VarDeclaration : public Statement {
    VarDeclaration(bool constant, std::vector<Stmt> identifiers, std::vector<Stmt> values, int line);
    static Stmt make(bool constant, std::vector<Stmt> identifiers, std::vector<Stmt> values, int line) {
       return std::make_unique<VarDeclaration>(constant, std::move(identifiers), std::move(values), line);
+   }
+   Stmt copy() const override;
+};
+
+struct FnDeclaration : public Statement {
+   Stmt identifier;
+   std::vector<Stmt> arguments;
+   Stmt returns;
+   Stmt body;
+
+   FnDeclaration(Stmt identifier, std::vector<Stmt> arguments, Stmt returns, Stmt body, int line);
+   static Stmt make(Stmt identifier, std::vector<Stmt> arguments, Stmt returns, Stmt body, int line) {
+      return std::make_unique<FnDeclaration>(std::move(identifier), std::move(arguments), std::move(returns), std::move(body), line);
    }
    Stmt copy() const override;
 };

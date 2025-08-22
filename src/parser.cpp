@@ -19,6 +19,8 @@ Stmt Parser::parse_stmt() {
    if (token.type == Type::keyword) {
       if (token.lexeme == "let"s || token.lexeme == "con"s) {
          return parse_var_decl();
+      } else if (token.lexeme == "fn"s) {
+         return parse_fn_decl();
       } else if (token.lexeme == "delete"s) {
          return parse_del_stmt();
       } else if (token.lexeme == "exists"s) {
@@ -82,6 +84,28 @@ Stmt Parser::parse_var_decl() {
 
    fmt::raise_if(line(), constant, "Expected constant variableto have initialized value.");
    return VarDeclaration::make(constant, std::move(identifiers), std::move(body), line());
+}
+
+Stmt Parser::parse_fn_decl() {
+   advance();
+   auto original_line = line();
+   auto identifier = parse_primary_expr();
+   fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected identifier after 'fn' keyword, got '{}' instead.", stmt_type_str[int(identifier->type)]);
+
+   fmt::raise_if(line(), !is(Type::l_paren), "Expected '(' after 'fn {}', got '{}' instead.", get_stmt<IdentLiteral>(identifier).identifier, type_str[int(current().type)]);
+   advance();
+
+   // For now skip arguments
+   std::vector<Stmt> arguments;
+
+   fmt::raise_if(line(), !is(Type::r_paren), "Expected ')' after '('/parameter list, got '{}' instead.", type_str[int(current().type)]);
+   advance();
+
+   // For now skip returns
+   auto returns = NullLiteral::make(line());
+
+   auto body = parse_block();
+   return parse_unless_stmt(FnDeclaration::make(std::move(identifier), std::move(arguments), std::move(returns), std::move(body), original_line));
 }
 
 Stmt Parser::parse_exists_stmt() {
@@ -369,12 +393,16 @@ Stmt Parser::parse_reverse_unary_expr() {
 
 Stmt Parser::parse_call_expr() {
    auto identifier = parse_primary_expr();
-   if (identifier->type != StmtType::identifier || !is(Type::l_paren)) {
+   if (identifier->type != StmtType::identifier) {
       return std::move(identifier);
    }
-   auto args = parse_args_list();
-   fmt::raise_if(line(), args->type != StmtType::args, "Expected arguments list after identifier, got '{}' instead.", stmt_type_str[int(args->type)]);
-   return CallExpr::make(std::move(args), std::move(identifier), line());
+
+   while (is(Type::l_paren)) {
+      auto args = parse_args_list();
+      fmt::raise_if(line(), args->type != StmtType::args, "Expected arguments list after identifier, got '{}' instead.", stmt_type_str[int(args->type)]);
+      identifier = CallExpr::make(std::move(args), std::move(identifier), line());
+   }
+   return std::move(identifier);
 }
 
 Stmt Parser::parse_args_list() {

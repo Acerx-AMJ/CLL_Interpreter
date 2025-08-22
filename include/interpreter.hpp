@@ -11,6 +11,7 @@ class Interpreter {
 
    Value evaluate_stmt(Environment& env, Stmt stmt);
    Value evaluate_var_decl(Environment& env, Stmt stmt);
+   Value evaluate_fn_decl(Environment& env, Stmt stmt);
    Value evaluate_del_stmt(Environment& env, Stmt stmt);
    Value evaluate_exists_stmt(Environment& env, Stmt stmt);
    Value evaluate_if_else_stmt(Environment& env, Stmt stmt);
@@ -28,6 +29,7 @@ class Interpreter {
 
 public:
    Value evaluate(Program& program, Environment& env);
+   Value call_function(Environment& env, Value func, const std::vector<Value>& args, int line);
 };
 
 #endif
