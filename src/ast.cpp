@@ -22,15 +22,19 @@ Stmt VarDeclaration::copy() const {
 
 // Function declaration
 
-FnDeclaration::FnDeclaration(Stmt identifier, std::vector<Stmt> arguments, Stmt returns, Stmt return_def, Stmt body, int line)
-   : identifier(std::move(identifier)), arguments(std::move(arguments)),  returns(std::move(returns)), return_def(std::move(return_def)), body(std::move(body)), Statement(StmtType::fn_decl, line) {}
+FnDeclaration::FnDeclaration(Stmt identifier, std::vector<Stmt> arguments, std::vector<Stmt> argument_def, Stmt returns, Stmt return_def, Stmt body, int def_args, int line)
+   : identifier(std::move(identifier)), arguments(std::move(arguments)), argument_def(std::move(argument_def)), returns(std::move(returns)), return_def(std::move(return_def)), body(std::move(body)), def_args(def_args), Statement(StmtType::fn_decl, line) {}
 
 Stmt FnDeclaration::copy() const {
-   std::vector<Stmt> copied_args;
+   std::vector<Stmt> copied_args, copied_arg_def;
    for (const auto& arg : arguments) {
       copied_args.push_back(arg->copy());
    }
-   return FnDeclaration::make(identifier->copy(), std::move(copied_args), returns->copy(), return_def->copy(), body->copy(), line);
+   
+   for (const auto& arg_def : argument_def) {
+      copied_arg_def.push_back(arg_def->copy());
+   }
+   return FnDeclaration::make(identifier->copy(), std::move(copied_args), std::move(copied_arg_def), returns->copy(), return_def->copy(), body->copy(), def_args, line);
 }
 
 // Exists statement

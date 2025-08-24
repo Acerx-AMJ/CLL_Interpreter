@@ -1,17 +1,18 @@
 #include "interpreter.hpp"
+
 #include "fmt.hpp"
 
 Value Interpreter::evaluate(Program& program, Environment& env) {
    Value last;
+   int id = ++fn_counter;
+
    for (auto& ast : program.statements) {
       last = evaluate_stmt(env, std::move(ast));
 
-      if (should_return) {
-         should_return = false;
-         return std::move(last);
-      }
-
-      if (should_continue || should_break) {
+      if (!return_stack.empty() && return_stack.top() >= id) {
+         while (!return_stack.empty()) {
+            return_stack.pop();
+         }
          return std::move(last);
       }
    }
@@ -45,7 +46,8 @@ Value Interpreter::evaluate_stmt(Environment& env, Stmt stmt) {
       fmt::raise_if(stmt->line, loop_stack.empty(), "'ContinueStatement' outside of a loop.");
       return NullValue::make(stmt->line);
    case StmtType::return_stmt:
-      should_return = true;
+      return_stack.push(fn_counter);
+      fmt::raise_if(stmt->line, fn_stack.empty(), "'ReturnStatement' outside of a function.");
       return evaluate_stmt(env, std::move(get_stmt<ReturnStmt>(stmt).value));
    case StmtType::unless_stmt:
       return evaluate_unless_stmt(env, std::move(stmt));
@@ -72,6 +74,17 @@ Value Interpreter::evaluate_fn_decl(Environment& env, Stmt stmt) {
    auto& decl = get_stmt<FnDeclaration>(stmt);
    auto identifier = get_stmt<IdentLiteral>(decl.identifier);
 
+   std::vector<std::string> parameters;
+   for (const auto& arg : decl.arguments) {
+      fmt::raise_if(arg->line, arg->type != StmtType::identifier, "Expected 'IdentifierLiteral', got '{}' instead.", stmt_type_str[int(arg->type)]);
+      parameters.push_back(get_stmt<IdentLiteral>(arg).identifier);
+   }
+
+   std::vector<Value> parameter_def;
+   for (auto& param_def : decl.argument_def) {
+      parameter_def.push_back(evaluate_stmt(env, std::move(param_def)));
+   }
+
    std::string returns;
    if (decl.returns->type == StmtType::identifier) {
       returns = get_stmt<IdentLiteral>(decl.returns).identifier;
@@ -82,7 +95,7 @@ Value Interpreter::evaluate_fn_decl(Environment& env, Stmt stmt) {
       return_def = evaluate_stmt(env, std::move(decl.return_def));
    }
 
-   auto func = Function::make(identifier.identifier, {}, returns, std::move(return_def), &env, std::move(decl.body), decl.line);
+   auto func = Function::make(identifier.identifier, std::move(parameters), std::move(parameter_def), returns, std::move(return_def), &env, std::move(decl.body), decl.def_args, decl.line);
 
    env.declare_variable(identifier.identifier, std::move(func), true, decl.line);
    return NullValue::make(decl.line);
@@ -386,22 +399,39 @@ Value Interpreter::evaluate_primary_expr(Environment& env, Stmt expr) {
    }
 }
 
-Value Interpreter::call_function(Environment& env, Value func, const std::vector<Value>& args, int line) {
+Value Interpreter::call_function(Environment& env, Value func, std::vector<Value>& args, int line) {
    if (func->type == ValueType::native_fn) {
       auto& native = get_value<NativeFn>(func);
       return native.call(args, line);
    } else if (func->type == ValueType::fn) {
       auto& fn = get_value<Function>(func);
-      fmt::raise_if(fn.line, args.size() != fn.parameters.size(), "Expected 'CallExpression' argument count to match function declaration parameter count. {} != {}.", args.size(), fn.parameters.size());
+      fmt::raise_if(line, args.size() > fn.parameters.size() || args.size() < fn.parameters.size() - fn.def_args, "Expected 'CallExpression' argument count to match function declaration parameter count. {} != {}.", args.size(), fn.parameters.size());
+      fn_stack.push(1);
 
       Environment new_env (fn.env);
+      int def_i = 0;
+      for (int i = 0; i < fn.parameters.size(); ++i) {
+         if (i < args.size()) {
+            new_env.declare_variable(fn.parameters.at(i), std::move(args.at(i)), false, args.at(i)->line);
+            if (i >= fn.parameters.size() - fn.def_args) {
+               ++def_i;
+            }
+         } else {
+            new_env.declare_variable(fn.parameters.at(i), fn.parameter_def.at(def_i)->copy(), false, fn.parameter_def.at(def_i)->line);
+            ++def_i;
+         }
+      }
+
       if (!fn.returns.empty()) {
          new_env.declare_variable(fn.returns, fn.return_def->copy(), false, fn.line);
       }
 
       // Dirty solution to getting a copy of a program
       auto body_ptr = fn.body->copy();
-      return evaluate(static_cast<Program&>(*body_ptr.get()), new_env);
+      auto value = evaluate(static_cast<Program&>(*body_ptr.get()), new_env);
+
+      fn_stack.pop();
+      return std::move(value);
    } else {
       fmt::raise(line, "Attempted to call '{}', but only 'NativeFunction' and 'Function' are callable.", value_type_str[int(func->type)]);
    }

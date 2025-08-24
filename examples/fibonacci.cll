@@ -1,0 +1,25 @@
+fn fibonacci(n) {
+   return n unless n > 1
+   fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+fn fibonacci_iterative(n) {
+   return n unless n > 1
+   let prev1, prev2, curr = 1, 0
+
+   for let i = 2; i <= n; i++ {
+      curr = prev1 + prev2
+      prev2 = prev1
+      prev1 = curr
+   }
+   return curr
+}
+
+fn main() {
+   // fibonacci(20) // Around 1.13s
+   fibonacci_iterative(20) // Around 4.5ms
+
+   // Python equivalent:
+   // fibonacci -> 28ms
+   // fibonacci_iterative -> 32ms
+}

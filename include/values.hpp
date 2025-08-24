@@ -151,14 +151,16 @@ class Environment;
 struct Function : public ValueLiteral {
    std::string identifier;
    std::vector<std::string> parameters;
+   std::vector<Value> parameter_def;
    std::string returns;
    Value return_def;
    Environment* env;
    Stmt body;
+   int def_args;
 
-   Function(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Value return_def, Environment* env, Stmt body, int line);
-   static Value make(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Value return_def, Environment* env, Stmt body, int line) {
-      return std::make_unique<Function>(identifier, parameters, returns, std::move(return_def), env, std::move(body), line);
+   Function(const std::string& identifier, const std::vector<std::string>& parameters, std::vector<Value> parameter_def, const std::string& returns, Value return_def, Environment* env, Stmt body, int def_args, int line);
+   static Value make(const std::string& identifier, const std::vector<std::string>& parameters, std::vector<Value> parameter_def, const std::string& returns, Value return_def, Environment* env, Stmt body, int def_args, int line) {
+      return std::make_unique<Function>(identifier, parameters, std::move(parameter_def), returns, std::move(return_def), env, std::move(body), def_args, line);
    }
 
    std::string as_string() const override;

@@ -26,7 +26,8 @@ int main(int argc, char* argv[]) {
    if (global.variable_exists("main"s)) {
       auto main = global.get_variable("main"s, err::nline);
       if (main->type == ValueType::fn) {
-         interpreter.call_function(global, std::move(main), {}, err::nline);
+         std::vector<Value> args;
+         interpreter.call_function(global, std::move(main), args, err::nline);
       }
    }
    return 0;

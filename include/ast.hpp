@@ -59,13 +59,15 @@ struct VarDeclaration : public Statement {
 struct FnDeclaration : public Statement {
    Stmt identifier;
    std::vector<Stmt> arguments;
+   std::vector<Stmt> argument_def;
    Stmt returns;
    Stmt return_def;
    Stmt body;
+   int def_args;
 
-   FnDeclaration(Stmt identifier, std::vector<Stmt> arguments, Stmt returns, Stmt return_def, Stmt body, int line);
-   static Stmt make(Stmt identifier, std::vector<Stmt> arguments, Stmt returns, Stmt return_def, Stmt body, int line) {
-      return std::make_unique<FnDeclaration>(std::move(identifier), std::move(arguments), std::move(returns), std::move(return_def), std::move(body), line);
+   FnDeclaration(Stmt identifier, std::vector<Stmt> arguments, std::vector<Stmt> argument_def, Stmt returns, Stmt return_def, Stmt body, int def_args, int line);
+   static Stmt make(Stmt identifier, std::vector<Stmt> arguments, std::vector<Stmt> argument_def, Stmt returns, Stmt return_def, Stmt body, int def_args, int line) {
+      return std::make_unique<FnDeclaration>(std::move(identifier), std::move(arguments), std::move(argument_def), std::move(returns), std::move(return_def), std::move(body), def_args, line);
    }
    Stmt copy() const override;
 };

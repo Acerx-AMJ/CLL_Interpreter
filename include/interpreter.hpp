@@ -6,8 +6,9 @@
 #include <stack>
 
 class Interpreter {
-   std::stack<int> loop_stack;
-   bool should_return = false, should_break = false, should_continue = false;
+   std::stack<int> loop_stack, fn_stack, return_stack;
+   int fn_counter = 0;
+   bool should_break = false, should_continue = false;
 
    Value evaluate_stmt(Environment& env, Stmt stmt);
    Value evaluate_var_decl(Environment& env, Stmt stmt);
@@ -29,7 +30,7 @@ class Interpreter {
 
 public:
    Value evaluate(Program& program, Environment& env);
-   Value call_function(Environment& env, Value func, const std::vector<Value>& args, int line);
+   Value call_function(Environment& env, Value func, std::vector<Value>& args, int line);
 };
 
 #endif

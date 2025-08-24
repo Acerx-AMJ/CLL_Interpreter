@@ -95,10 +95,37 @@ Stmt Parser::parse_fn_decl() {
    fmt::raise_if(line(), !is(Type::l_paren), "Expected '(' after 'fn {}', got '{}' instead.", get_stmt<IdentLiteral>(identifier).identifier, type_str[int(current().type)]);
    advance();
 
-   // For now skip arguments
-   std::vector<Stmt> arguments;
+   std::vector<Stmt> arguments, argument_def;
+   int def_args = 0;
 
-   fmt::raise_if(line(), !is(Type::r_paren), "Expected ')' after '('/parameter list, got '{}' instead.", type_str[int(current().type)]);
+   if (!is(Type::r_paren)) {
+      auto arg = parse_primary_expr();
+      if (is(Type::assign)) {
+         advance();
+         argument_def.push_back(parse_expr());
+         ++def_args;
+      }
+      
+      while (is(Type::comma) || is(Type::assign)) {
+         advance();
+         if (is(Type::r_paren)) {
+            break;
+         }
+
+         arguments.push_back(std::move(arg));
+         arg = parse_primary_expr();
+
+         fmt::raise_if(line(), def_args && !is(Type::assign), "All arguments with a default value must be placed at the end of the parameter list.");
+         if (is(Type::assign)) {
+            advance();
+            argument_def.push_back(parse_expr());
+            ++def_args;
+         }
+      }
+      arguments.push_back(std::move(arg));
+   }
+
+   fmt::raise_if(line(), !is(Type::r_paren), "Expected ')' after '(' parameter list, got '{}' instead.", type_str[int(current().type)]);
    advance();
 
    auto returns = NullLiteral::make(line());
@@ -116,7 +143,7 @@ Stmt Parser::parse_fn_decl() {
    }
 
    auto body = parse_block();
-   return parse_unless_stmt(FnDeclaration::make(std::move(identifier), std::move(arguments), std::move(returns), std::move(return_def), std::move(body), original_line));
+   return parse_unless_stmt(FnDeclaration::make(std::move(identifier), std::move(arguments), std::move(argument_def), std::move(returns), std::move(return_def), std::move(body), def_args, original_line));
 }
 
 Stmt Parser::parse_exists_stmt() {

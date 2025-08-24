@@ -1,0 +1,18 @@
+fn factorial(n) {
+   return n unless n > 1
+   n * factorial(n - 1)
+}
+
+fn factorial_iterative(n) {
+   return for let i = n - 1; i > 1; i-- do
+      n *= i
+}
+
+fn main() { 
+   // factorial(15) // 4.7ms
+   factorial_iterative(15) // 4ms
+
+   // Python equivalent:
+   // factorial -> 31ms
+   // factorial_iterative -> 29ms
+}

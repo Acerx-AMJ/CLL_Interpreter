@@ -363,8 +363,8 @@ Value NativeFn::copy() const {
 
 // Function
 
-Function::Function(const std::string& identifier, const std::vector<std::string>& parameters, const std::string& returns, Value return_def, Environment* env, Stmt body, int line)
-   : identifier(identifier), parameters(parameters), returns(returns), return_def(std::move(return_def)), env(env), body(std::move(body)), ValueLiteral(ValueType::fn, line) {}
+Function::Function(const std::string& identifier, const std::vector<std::string>& parameters, std::vector<Value> parameter_def, const std::string& returns, Value return_def, Environment* env, Stmt body, int def_args, int line)
+   : identifier(identifier), parameters(parameters), parameter_def(std::move(parameter_def)), returns(returns), return_def(std::move(return_def)), env(env), body(std::move(body)), def_args(def_args), ValueLiteral(ValueType::fn, line) {}
 
 std::string Function::as_string() const {
    return identifier;
@@ -383,7 +383,11 @@ bool Function::as_bool() const {
 }
 
 Value Function::copy() const {
-   return Function::make(identifier, parameters, returns, return_def->copy(), env, body->copy(), line);
+   std::vector<Value> copied_param_def;
+   for (const auto& param_def : parameter_def) {
+      copied_param_def.push_back(param_def->copy());
+   }
+   return Function::make(identifier, parameters, std::move(copied_param_def), returns, return_def->copy(), env, body->copy(), def_args, line);
 }
 
 // Null value
