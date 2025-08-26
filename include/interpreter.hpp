@@ -25,6 +25,7 @@ class Interpreter {
    Value evaluate_ternary_expr(Environment& env, Stmt expr);
    Value evaluate_binary_expr(Environment& env, Stmt expr);
    Value evaluate_unary_expr(Environment& env, Stmt expr);
+   Value evaluate_member_access(Environment& env, Stmt expr);
    Value evaluate_assignment(Environment& env, Stmt expr);
    Value evaluate_call_expr(Environment& env, Stmt expr);
    Value evaluate_primary_expr(Environment& env, Stmt expr);

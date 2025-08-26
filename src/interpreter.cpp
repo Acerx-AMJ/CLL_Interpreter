@@ -232,6 +232,8 @@ Value Interpreter::evaluate_expr(Environment& env, Stmt expr) {
       return evaluate_binary_expr(env, std::move(expr));
    case StmtType::unary:
       return evaluate_unary_expr(env, std::move(expr));
+   case StmtType::member:
+      return evaluate_member_access(env, std::move(expr));
    case StmtType::call:
       return evaluate_call_expr(env, std::move(expr));
    default:
@@ -337,6 +339,24 @@ Value Interpreter::evaluate_unary_expr(Environment& env, Stmt expr) {
    }
    default:
       fmt::raise(unary.line, "Unsupported unary command '{}'.", type_str[int(unary.op)]);
+   }
+}
+
+Value Interpreter::evaluate_member_access(Environment& env, Stmt expr) {
+   auto& member = get_stmt<MemberAccess>(expr);
+   auto left = evaluate_stmt(env, std::move(member.left));
+   auto key = evaluate_stmt(env, std::move(member.key));
+
+   if (left->type == ValueType::array) {
+      auto& array = get_value<Array>(left);
+      fmt::raise_if(member.line, key->as_number() >= array.array.size(), "Index out of bounds. Array size is {}, while index is {}.", array.array.size(), key->as_number());
+      return array.array.at(key->as_number())->copy();
+   } else if (left->type == ValueType::string) {
+      auto& string = get_value<StringValue>(left);
+      fmt::raise_if(member.line, key->as_number() >= string.string.size(), "Index out of bounds. String size is {}, while index is {}.", string.string.size(), key->as_number());
+      return CharValue::make(string.string.at(key->as_number()), string.line);
+   } else {
+      fmt::raise(member.line, "Invalid member access: '{}'['{}'].", value_type_str[int(left->type)], value_type_str[int(key->type)]);
    }
 }
 

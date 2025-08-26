@@ -437,7 +437,7 @@ Stmt Parser::parse_reverse_unary_expr() {
 }
 
 Stmt Parser::parse_call_expr() {
-   auto identifier = parse_primary_expr();
+   auto identifier = parse_member_access();
    if (identifier->type != StmtType::identifier) {
       return std::move(identifier);
    }
@@ -452,7 +452,7 @@ Stmt Parser::parse_call_expr() {
 
 Stmt Parser::parse_args_list() {
    if (!is(Type::l_paren)) {
-      return parse_primary_expr();
+      return parse_member_access();
    }
    advance();
    std::vector<Stmt> args;
@@ -474,9 +474,22 @@ Stmt Parser::parse_args_list() {
    }
 
    args.push_back(std::move(arg));
-   fmt::raise_if(line(), !is(Type::r_paren), "Expected a matching ')' after argument list, got '{}' instead.", type_str[int(current().type)]);
+   fmt::raise_if(line(), !is(Type::r_paren), "Expected matching parentheses after argument list, got '{}' instead.", type_str[int(current().type)]);
    advance();
    return ArgsListExpr::make(std::move(args), line());
+}
+
+Stmt Parser::parse_member_access() {
+   auto left = parse_primary_expr();
+
+   while (is(Type::l_bracket)) {
+      advance();
+      auto key = parse_expr();
+      fmt::raise_if(line(), !is(Type::r_bracket), "Expected ']' after key.");
+      advance();
+      left = MemberAccess::make(std::move(left), std::move(key), line());
+   }
+   return std::move(left);
 }
 
 Stmt Parser::parse_primary_expr() {

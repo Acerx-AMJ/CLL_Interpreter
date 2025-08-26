@@ -9,7 +9,7 @@
 enum class StmtType : char {
    var_decl, fn_decl, exists, sizeof_stmt, del, ifelse, if_clause, while_loop, for_loop,
    break_stmt, continue_stmt, return_stmt, unless_stmt,
-   assignment, ternary, binary, unary,
+   assignment, ternary, binary, unary, member,
    call, args,
    identifier, number, character, string, array, null, program
 };
@@ -17,7 +17,7 @@ enum class StmtType : char {
 constexpr std::string_view stmt_type_str[] {
    "VariableDeclaration", "FunctionDeclaration", "ExistsStatement", "SizeOfStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement",
    "BreakStatement", "ContinueStatement", "ReturnStatement", "UnlessStatement",
-   "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression",
+   "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression", "MemberAccess",
    "CallExpression", "ArgumentListExpression",
    "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "ArrayLiteral", "NullLiteral", "Program"
 };
@@ -230,6 +230,17 @@ struct UnaryExpr : public Statement {
    UnaryExpr(Type op, Stmt value, int line);
    static Stmt make(Type op, Stmt value, int line) {
       return std::make_unique<UnaryExpr>(op, std::move(value), line);
+   }
+   Stmt copy() const override;
+};
+
+struct MemberAccess : public Statement {
+   Stmt left;
+   Stmt key;
+
+   MemberAccess(Stmt left, Stmt key, int line);
+   static Stmt make(Stmt left, Stmt key, int line) {
+      return std::make_unique<MemberAccess>(std::move(left), std::move(key), line);
    }
    Stmt copy() const override;
 };

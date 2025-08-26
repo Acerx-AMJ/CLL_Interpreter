@@ -190,6 +190,15 @@ Stmt UnaryExpr::copy() const {
    return UnaryExpr::make(op, std::move(value->copy()), line);
 }
 
+// Member access expression
+
+MemberAccess::MemberAccess(Stmt left, Stmt key, int line) 
+   : left(std::move(left)), key(std::move(key)), Statement(StmtType::member, line) {}
+
+Stmt MemberAccess::copy() const {
+   return MemberAccess::make(left->copy(), key->copy(), line);
+}
+
 // Call expression
 
 CallExpr::CallExpr(Stmt args, Stmt identifier, int line)
