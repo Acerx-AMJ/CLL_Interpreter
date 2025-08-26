@@ -31,6 +31,8 @@ Value Interpreter::evaluate_stmt(Environment& env, Stmt stmt) {
       return evaluate_del_stmt(env, std::move(stmt));
    case StmtType::exists:
       return evaluate_exists_stmt(env, std::move(stmt));
+   case StmtType::sizeof_stmt:
+      return evaluate_size_of_stmt(env, std::move(stmt));
    case StmtType::ifelse:
       return evaluate_if_else_stmt(env, std::move(stmt));
    case StmtType::while_loop:
@@ -113,6 +115,20 @@ Value Interpreter::evaluate_exists_stmt(Environment& env, Stmt stmt) {
    auto& exists = get_stmt<ExistsStmt>(stmt);
    auto& identifier = get_stmt<IdentLiteral>(exists.identifier);
    return BoolValue::make(env.variable_exists(identifier.identifier), exists.line);
+}
+
+Value Interpreter::evaluate_size_of_stmt(Environment& env, Stmt stmt) {
+   auto& size_of = get_stmt<SizeOfStmt>(stmt);
+   auto value = evaluate_stmt(env, std::move(size_of.stmt));
+
+   switch (value->type) {
+   case ValueType::array:
+      return NumberValue::make(get_value<Array>(value).array.size(), value->line);
+   case ValueType::string:
+      return NumberValue::make(get_value<StringValue>(value).string.size(), value->line);
+   default:
+      fmt::raise(value->line, "Cannot get the size of '{}'.", value_type_str[int(value->type)]);
+   }
 }
 
 Value Interpreter::evaluate_if_else_stmt(Environment& env, Stmt stmt) {
@@ -388,6 +404,13 @@ Value Interpreter::evaluate_primary_expr(Environment& env, Stmt expr) {
       return CharValue::make(get_stmt<CharLiteral>(expr).ch, expr->line);
    case StmtType::string:
       return StringValue::make(get_stmt<StringLiteral>(expr).string, expr->line);
+   case StmtType::array: {
+      std::vector<Value> array;
+      for (auto& element : get_stmt<ArrayLiteral>(expr).array) {
+         array.push_back(evaluate_stmt(env, std::move(element)));
+      }
+      return Array::make(std::move(array), expr->line);
+   }
    case StmtType::null:
       return NullValue::make(expr->line);
    case StmtType::program: {

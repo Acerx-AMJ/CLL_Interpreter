@@ -25,6 +25,8 @@ Stmt Parser::parse_stmt() {
          return parse_del_stmt();
       } else if (token.lexeme == "exists"s) {
          return parse_exists_stmt();
+      } else if (token.lexeme == "sizeof"s) {
+         return parse_size_of_stmt();
       } else if (token.lexeme == "if"s) {
          return parse_if_else_stmt();
       } else if (token.lexeme == "while"s) {
@@ -151,6 +153,11 @@ Stmt Parser::parse_exists_stmt() {
    auto identifier = parse_primary_expr();
    fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected identifier after 'exists' statement, got '{}' instead.", stmt_type_str[int(identifier->type)]);
    return ExistsStmt::make(std::move(identifier), line());
+}
+
+Stmt Parser::parse_size_of_stmt() {
+   advance();
+   return SizeOfStmt::make(parse_expr(), line());
 }
 
 Stmt Parser::parse_del_stmt() {
@@ -497,9 +504,10 @@ Stmt Parser::parse_primary_expr() {
       return StringLiteral::make(string, line());
    } else if (is(Type::l_paren)) {
       advance();
+      int original_line = line();
       auto value = parse_expr();
 
-      fmt::raise_if(line(), !is(Type::r_paren), "Expected to find a matching parenthesis after '(', got '{}' instead.", type_str[int(current().type)]);
+      fmt::raise_if(original_line, !is(Type::r_paren), "Unterminated parentheses.");
       advance();
       return std::move(value);
    } else if (is(Type::l_brace)) {
@@ -513,6 +521,30 @@ Stmt Parser::parse_primary_expr() {
       fmt::raise_if(program->line, !is(Type::r_brace), "Unterminated scope.");
       advance();
       return std::move(program);
+   } else if (is(Type::l_bracket)) {
+      advance();
+      auto array = std::make_unique<ArrayLiteral>(std::vector<Stmt>{}, line());
+
+      if (is(Type::r_bracket)) {
+         advance();
+         return std::move(array);
+      }
+
+      auto element = parse_expr();
+      while (is(Type::comma)) {
+         advance();
+         if (is(Type::r_bracket)) {
+            break;
+         }
+
+         array->array.push_back(std::move(element));
+         element = parse_expr();
+      }
+
+      array->array.push_back(std::move(element));
+      fmt::raise_if(array->line, !is(Type::r_bracket), "Unterminated array literal.");
+      advance();
+      return std::move(array);
    } else if (is(Type::keyword)) {
       return std::move(parse_stmt());
    } else {

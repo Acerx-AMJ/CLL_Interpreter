@@ -211,7 +211,7 @@ IdentValue::IdentValue(const std::string& identifier, int line)
    : identifier(identifier), ValueLiteral(ValueType::identifier, line) {}
 
 std::string IdentValue::as_string() const {
-   return std::string("[") + identifier + "]";
+   return "["s + identifier + "]"s;
 }
 
 long double IdentValue::as_number() const {
@@ -317,7 +317,7 @@ BoolValue::BoolValue(bool value, int line)
    : value((value ? true : false)), ValueLiteral(ValueType::boolean, line) {}
 
 std::string BoolValue::as_string() const {
-   return (value ? "true" : "false");
+   return (value ? "true"s : "false"s);
 }
 
 long double BoolValue::as_number() const {
@@ -334,6 +334,39 @@ bool BoolValue::as_bool() const {
 
 Value BoolValue::copy() const {
    return BoolValue::make(value, line);
+}
+
+// Array value
+
+Array::Array(std::vector<Value> array, int line)
+   : array(std::move(array)), ValueLiteral(ValueType::array, line) {}
+
+std::string Array::as_string() const {
+   std::string result = "[ "s;
+   for (int i = 0; i < array.size(); ++i) {
+      result += array.at(i)->as_string() + ' ';
+   }
+   return result + "]"s;
+}
+
+long double Array::as_number() const {
+   fmt::raise(line, "Cannot convert 'Array' to 'Number'.");
+}
+
+char Array::as_char() const {
+   fmt::raise(line, "Cannot convert 'Array' to 'Character'.");
+}
+
+bool Array::as_bool() const {
+   return !array.empty();
+}
+
+Value Array::copy() const {
+   std::vector<Value> copied_array;
+   for (const auto& element : array) {
+      copied_array.push_back(element->copy());
+   }
+   return Array::make(std::move(copied_array), line);
 }
 
 // Native function

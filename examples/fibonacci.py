@@ -17,11 +17,5 @@ def fibonacci_iterative(n):
       prev1 = curr
    return curr
 
-def func(n):
-   return n
-
-for i in range(0, 2 ** 20):
-   func(i)
-
 fibonacci(20)
 # fibonacci_iterative(20)

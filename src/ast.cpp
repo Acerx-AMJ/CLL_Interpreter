@@ -46,6 +46,15 @@ Stmt ExistsStmt::copy() const {
    return ExistsStmt::make(identifier->copy(), line);
 }
 
+// Size of statement
+
+SizeOfStmt::SizeOfStmt(Stmt stmt, int line)
+   : stmt(std::move(stmt)), Statement(StmtType::sizeof_stmt, line) {}
+
+Stmt SizeOfStmt::copy() const {
+   return SizeOfStmt::make(stmt->copy(), line);
+}
+
 // Delete statement
 
 DeleteStmt::DeleteStmt(std::vector<Stmt> identifiers, int line)
@@ -237,6 +246,19 @@ StringLiteral::StringLiteral(const std::string& string, int line)
 
 Stmt StringLiteral::copy() const {
    return StringLiteral::make(string, line);
+}
+
+// Array literal
+
+ArrayLiteral::ArrayLiteral(std::vector<Stmt> array, int line)
+   : array(std::move(array)), Statement(StmtType::array, line) {}
+
+Stmt ArrayLiteral::copy() const {
+   std::vector<Stmt> copied_array;
+   for (const auto& element : array) {
+      copied_array.push_back(element->copy());
+   }
+   return ArrayLiteral::make(std::move(copied_array), line);
 }
 
 // Null literal

@@ -16,6 +16,7 @@ class Parser {
    Stmt parse_fn_decl();
    Stmt parse_del_stmt();
    Stmt parse_exists_stmt();
+   Stmt parse_size_of_stmt();
    Stmt parse_if_else_stmt();
    Stmt parse_if_clause();
    Stmt parse_while_loop();

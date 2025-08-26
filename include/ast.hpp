@@ -7,19 +7,19 @@
 #include <vector>
 
 enum class StmtType : char {
-   var_decl, fn_decl, exists, del, ifelse, if_clause, while_loop, for_loop,
+   var_decl, fn_decl, exists, sizeof_stmt, del, ifelse, if_clause, while_loop, for_loop,
    break_stmt, continue_stmt, return_stmt, unless_stmt,
    assignment, ternary, binary, unary,
    call, args,
-   identifier, number, character, string, null, program
+   identifier, number, character, string, array, null, program
 };
 
 constexpr std::string_view stmt_type_str[] {
-   "VariableDeclaration", "FunctionDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement",
+   "VariableDeclaration", "FunctionDeclaration", "ExistsStatement", "SizeOfStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement",
    "BreakStatement", "ContinueStatement", "ReturnStatement", "UnlessStatement",
    "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression",
    "CallExpression", "ArgumentListExpression",
-   "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "NullLiteral", "Program"
+   "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "ArrayLiteral", "NullLiteral", "Program"
 };
 
 struct Statement;
@@ -78,6 +78,16 @@ struct ExistsStmt : public Statement {
    ExistsStmt(Stmt identifier, int line);
    static Stmt make(Stmt identifier, int line) {
       return std::make_unique<ExistsStmt>(std::move(identifier), line);
+   }
+   Stmt copy() const override;
+};
+
+struct SizeOfStmt : public Statement {
+   Stmt stmt;
+
+   SizeOfStmt(Stmt stmt, int line);
+   static Stmt make(Stmt stmt, int line) {
+      return std::make_unique<SizeOfStmt>(std::move(stmt), line);
    }
    Stmt copy() const override;
 };
@@ -284,6 +294,16 @@ struct StringLiteral : public Statement {
    StringLiteral(const std::string& string, int line);
    static Stmt make(const std::string& string, int line) {
       return std::make_unique<StringLiteral>(string, line);
+   }
+   Stmt copy() const override;
+};
+
+struct ArrayLiteral : public Statement {
+   std::vector<Stmt> array;
+
+   ArrayLiteral(std::vector<Stmt> array, int line);
+   static Stmt make(std::vector<Stmt> array, int line) {
+      return std::make_unique<ArrayLiteral>(std::move(array), line);
    }
    Stmt copy() const override;
 };

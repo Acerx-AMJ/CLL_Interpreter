@@ -7,11 +7,11 @@
 #include <string>
 
 enum class ValueType : char {
-   identifier, number, character, string, boolean, native_fn, fn, null
+   identifier, number, character, string, boolean, array, native_fn, fn, null
 };
 
 constexpr std::string_view value_type_str[] {
-   "Identifier", "Number", "Character", "String", "Boolean", "NativeFunction", "Function", "Null"   
+   "Identifier", "Number", "Character", "String", "Boolean", "Array", "NativeFunction", "Function", "Null"   
 };
 
 struct ValueLiteral;
@@ -120,6 +120,21 @@ struct BoolValue : public ValueLiteral {
    BoolValue(bool value, int line);
    static Value make(bool value, int line) {
       return std::make_unique<BoolValue>(value, line);
+   }
+
+   std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
+   bool as_bool() const override;
+   Value copy() const override;
+};
+
+struct Array : public ValueLiteral {
+   std::vector<Value> array;
+
+   Array(std::vector<Value> array, int line);
+   static Value make(std::vector<Value> array, int line) {
+      return std::make_unique<Array>(std::move(array), line);
    }
 
    std::string as_string() const override;

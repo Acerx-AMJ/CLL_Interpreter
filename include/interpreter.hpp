@@ -15,6 +15,7 @@ class Interpreter {
    Value evaluate_fn_decl(Environment& env, Stmt stmt);
    Value evaluate_del_stmt(Environment& env, Stmt stmt);
    Value evaluate_exists_stmt(Environment& env, Stmt stmt);
+   Value evaluate_size_of_stmt(Environment& env, Stmt stmt);
    Value evaluate_if_else_stmt(Environment& env, Stmt stmt);
    Value evaluate_while_loop(Environment& env, Stmt stmt);
    Value evaluate_for_loop(Environment& env, Stmt stmt);
