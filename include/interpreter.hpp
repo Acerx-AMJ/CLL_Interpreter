@@ -15,7 +15,6 @@ class Interpreter {
    Value evaluate_fn_decl(Environment& env, Stmt stmt);
    Value evaluate_del_stmt(Environment& env, Stmt stmt);
    Value evaluate_exists_stmt(Environment& env, Stmt stmt);
-   Value evaluate_size_of_stmt(Environment& env, Stmt stmt);
    Value evaluate_if_else_stmt(Environment& env, Stmt stmt);
    Value evaluate_while_loop(Environment& env, Stmt stmt);
    Value evaluate_for_loop(Environment& env, Stmt stmt);
@@ -26,6 +25,7 @@ class Interpreter {
    Value evaluate_binary_expr(Environment& env, Stmt expr);
    Value evaluate_unary_expr(Environment& env, Stmt expr);
    Value evaluate_member_access(Environment& env, Stmt expr);
+   Value evaluate_property_access(Environment& env, Stmt expr);
    Value evaluate_assignment(Environment& env, Stmt expr);
    Value evaluate_call_expr(Environment& env, Stmt expr);
    Value evaluate_primary_expr(Environment& env, Stmt expr);

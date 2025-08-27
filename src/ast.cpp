@@ -46,15 +46,6 @@ Stmt ExistsStmt::copy() const {
    return ExistsStmt::make(identifier->copy(), line);
 }
 
-// Size of statement
-
-SizeOfStmt::SizeOfStmt(Stmt stmt, int line)
-   : stmt(std::move(stmt)), Statement(StmtType::sizeof_stmt, line) {}
-
-Stmt SizeOfStmt::copy() const {
-   return SizeOfStmt::make(stmt->copy(), line);
-}
-
 // Delete statement
 
 DeleteStmt::DeleteStmt(std::vector<Stmt> identifiers, int line)
@@ -197,6 +188,19 @@ MemberAccess::MemberAccess(Stmt left, Stmt key, int line)
 
 Stmt MemberAccess::copy() const {
    return MemberAccess::make(left->copy(), key->copy(), line);
+}
+
+// Property access expression
+
+PropertyAccess::PropertyAccess(Stmt left, std::vector<Stmt> right, int line)
+   : left(std::move(left)), right(std::move(right)), Statement(StmtType::property, line) {}
+
+Stmt PropertyAccess::copy() const {
+   std::vector<Stmt> copied_right;
+   for (const auto& r : right) {
+      copied_right.push_back(r->copy());
+   }
+   return PropertyAccess::make(left->copy(), std::move(copied_right), line);
 }
 
 // Call expression

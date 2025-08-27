@@ -25,8 +25,6 @@ Stmt Parser::parse_stmt() {
          return parse_del_stmt();
       } else if (token.lexeme == "exists"s) {
          return parse_exists_stmt();
-      } else if (token.lexeme == "sizeof"s) {
-         return parse_size_of_stmt();
       } else if (token.lexeme == "if"s) {
          return parse_if_else_stmt();
       } else if (token.lexeme == "while"s) {
@@ -153,11 +151,6 @@ Stmt Parser::parse_exists_stmt() {
    auto identifier = parse_primary_expr();
    fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected identifier after 'exists' statement, got '{}' instead.", stmt_type_str[int(identifier->type)]);
    return ExistsStmt::make(std::move(identifier), line());
-}
-
-Stmt Parser::parse_size_of_stmt() {
-   advance();
-   return SizeOfStmt::make(parse_expr(), line());
 }
 
 Stmt Parser::parse_del_stmt() {
@@ -427,13 +420,29 @@ Stmt Parser::parse_unary_expr() {
 }
 
 Stmt Parser::parse_reverse_unary_expr() {
-   auto expr = parse_call_expr();
+   auto expr = parse_property_access();
    if (is(Type::increment) || is(Type::decrement)) {
       Type op = current().type;
       advance();
       expr = UnaryExpr::make(op, std::move(expr), line());
    }
    return expr;
+}
+
+Stmt Parser::parse_property_access() {
+   auto left = parse_call_expr();
+   if (!is(Type::dot)) {
+      return std::move(left);
+   }
+
+   std::vector<Stmt> right;
+   while (is(Type::dot)) {
+      advance();
+      auto r = parse_call_expr();
+      fmt::raise_if(line(), r->type != StmtType::call, "Expected 'CallExpression' after property access.");
+      right.push_back(std::move(r));
+   }
+   return PropertyAccess::make(std::move(left), std::move(right), line());
 }
 
 Stmt Parser::parse_call_expr() {

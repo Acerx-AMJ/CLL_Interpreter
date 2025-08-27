@@ -7,17 +7,17 @@
 #include <vector>
 
 enum class StmtType : char {
-   var_decl, fn_decl, exists, sizeof_stmt, del, ifelse, if_clause, while_loop, for_loop,
+   var_decl, fn_decl, exists, del, ifelse, if_clause, while_loop, for_loop,
    break_stmt, continue_stmt, return_stmt, unless_stmt,
-   assignment, ternary, binary, unary, member,
+   assignment, ternary, binary, unary, member, property,
    call, args,
    identifier, number, character, string, array, null, program
 };
 
 constexpr std::string_view stmt_type_str[] {
-   "VariableDeclaration", "FunctionDeclaration", "ExistsStatement", "SizeOfStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement",
+   "VariableDeclaration", "FunctionDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement",
    "BreakStatement", "ContinueStatement", "ReturnStatement", "UnlessStatement",
-   "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression", "MemberAccess",
+   "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression", "MemberAccess", "PropertyAccess",
    "CallExpression", "ArgumentListExpression",
    "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "ArrayLiteral", "NullLiteral", "Program"
 };
@@ -78,16 +78,6 @@ struct ExistsStmt : public Statement {
    ExistsStmt(Stmt identifier, int line);
    static Stmt make(Stmt identifier, int line) {
       return std::make_unique<ExistsStmt>(std::move(identifier), line);
-   }
-   Stmt copy() const override;
-};
-
-struct SizeOfStmt : public Statement {
-   Stmt stmt;
-
-   SizeOfStmt(Stmt stmt, int line);
-   static Stmt make(Stmt stmt, int line) {
-      return std::make_unique<SizeOfStmt>(std::move(stmt), line);
    }
    Stmt copy() const override;
 };
@@ -241,6 +231,17 @@ struct MemberAccess : public Statement {
    MemberAccess(Stmt left, Stmt key, int line);
    static Stmt make(Stmt left, Stmt key, int line) {
       return std::make_unique<MemberAccess>(std::move(left), std::move(key), line);
+   }
+   Stmt copy() const override;
+};
+
+struct PropertyAccess : public Statement {
+   Stmt left;
+   std::vector<Stmt> right;
+
+   PropertyAccess(Stmt left, std::vector<Stmt> right, int line);
+   static Stmt make(Stmt left, std::vector<Stmt> right, int line) {
+      return std::make_unique<PropertyAccess>(std::move(left), std::move(right), line);
    }
    Stmt copy() const override;
 };

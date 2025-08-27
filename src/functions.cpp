@@ -6,7 +6,7 @@
 namespace fun {
    // Print/Format functions
 
-   Value print(const std::vector<Value>& args, int line) {
+   Value print(std::vector<Value>& args, Environment* env, int line) {
       for (int i = 0; i < args.size(); ++i) {
          args.at(i)->print();
          if (i + 1 < args.size())
@@ -15,13 +15,13 @@ namespace fun {
       return NullValue::make(line);
    }
 
-   Value println(const std::vector<Value>& args, int line) {
-      auto null = print(args, line);
+   Value println(std::vector<Value>& args, Environment* env, int line) {
+      auto null = print(args, env, line);
       std::cout << '\n';
       return std::move(null);
    }
 
-   Value printf(const std::vector<Value>& args, int line) {
+   Value printf(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.empty() || args.at(0)->type != ValueType::string, "'printf': Expected at least one argument and expected the first argument to be a string.");
       std::string base = get_value<StringValue>(args.at(0)).string;
       std::vector<std::string> arguments;
@@ -33,7 +33,7 @@ namespace fun {
       return NullValue::make(line);
    }
 
-   Value printfln(const std::vector<Value>& args, int line) {
+   Value printfln(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.empty() || args.at(0)->type != ValueType::string, "'printfln': Expected at least one argument and expected the first argument to be a string.");
       std::string base = get_value<StringValue>(args.at(0)).string;
       std::vector<std::string> arguments;
@@ -45,7 +45,7 @@ namespace fun {
       return NullValue::make(line);
    }
 
-   Value format(const std::vector<Value>& args, int line) {
+   Value format(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.empty() || args.at(0)->type != ValueType::string, "'format': Expected at least one argument and expected the first argument to be a string.");
       std::string base = get_value<StringValue>(args.at(0)).string;
       std::vector<std::string> arguments;
@@ -58,7 +58,7 @@ namespace fun {
 
    // Error commands
 
-   Value raise(const std::vector<Value>& args, int line) {
+   Value raise(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.empty() || args.at(0)->type != ValueType::string, "'raise': Expected at least one argument and expected the first argument to be a string.");
       std::string base = get_value<StringValue>(args.at(0)).string;
       std::vector<std::string> arguments;
@@ -69,7 +69,7 @@ namespace fun {
       fmt::raise_v(line, base.c_str(), arguments);
    }
 
-   Value assert(const std::vector<Value>&args, int line) {
+   Value assert(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() != 2, "'assert': Expected two arguments.");
       if (!args.at(0)->as_bool()) {
          err::raise(args.at(1)->as_string(), line);
@@ -77,19 +77,19 @@ namespace fun {
       return NullValue::make(line);
    }
 
-   Value throw_(const std::vector<Value>& args, int line) {
+   Value throw_(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 2, "'throw': Expected at most two arguments.");
       err::raise((args.empty() ? "Error thrown with no further description." : args.at(0)->as_string()), err::nline, (args.size() < 2 ? err::nline : args.at(1)->as_number()));
    }
 
-   Value exit(const std::vector<Value>& args, int line) {
+   Value exit(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 1, "'exit': Expected no arguments or a single argument.");
       err::exit((args.empty() ? 0 : args.at(0)->as_number()));
    }
 
    // Input commands
 
-   Value input(const std::vector<Value>& args, int line) {
+   Value input(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 1, "'input': Expected no arguments or a single argument.");
       if (!args.empty()) {
          args.at(0)->print();
@@ -99,7 +99,7 @@ namespace fun {
       return StringValue::make(user_input, line);
    }
 
-   Value inputnum(const std::vector<Value>& args, int line) {
+   Value inputnum(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 1, "'inputnum': Expected no arguments or a single argument.");
       if (!args.empty()) {
          args.at(0)->print();
@@ -111,7 +111,7 @@ namespace fun {
       return NumberValue::make(user_input, line);
    }
 
-   Value inputch(const std::vector<Value>& args, int line) {
+   Value inputch(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 1, "'inputch': Expected no arguments or a single argument.");
       if (!args.empty()) {
          args.at(0)->print();
@@ -125,22 +125,22 @@ namespace fun {
 
    // Convert functions
 
-   Value string(const std::vector<Value>& args, int line) {
+   Value string(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 1, "'string': Expected no arguments or a single argument.");
       return StringValue::make((args.empty() ? "" : args.at(0)->as_string()), line);
    }
 
-   Value number(const std::vector<Value>& args, int line) {
+   Value number(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 1, "'number': Expected no arguments or a single argument.");
       return NumberValue::make((args.empty() ? 0 : args.at(0)->as_number()), line);
    }
 
-   Value char_(const std::vector<Value>& args, int line) {
+   Value char_(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 1, "'char': Expected no arguments or a single argument.");
       return CharValue::make((args.empty() ? 0 : args.at(0)->as_char()), line);
    }
 
-   Value bool_(const std::vector<Value>& args, int line) {
+   Value bool_(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 1, "'bool': Expected no arguments or a single argument.");
       return BoolValue::make((args.empty() ? false : args.at(0)->as_bool()), line);
    }

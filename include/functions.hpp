@@ -5,25 +5,25 @@
 #include <vector>
 
 namespace fun {
-   Value print(const std::vector<Value>& args, int line);
-   Value println(const std::vector<Value>& args, int line);
-   Value printf(const std::vector<Value>& args, int line);
-   Value printfln(const std::vector<Value>& args, int line);
-   Value format(const std::vector<Value>& args, int line);
+   Value print(std::vector<Value>& args, Environment* env, int line);
+   Value println(std::vector<Value>& args, Environment* env, int line);
+   Value printf(std::vector<Value>& args, Environment* env, int line);
+   Value printfln(std::vector<Value>& args, Environment* env, int line);
+   Value format(std::vector<Value>& args, Environment* env, int line);
 
-   Value raise(const std::vector<Value>& args, int line);
-   Value assert(const std::vector<Value>& args, int line);
-   Value throw_(const std::vector<Value>& args, int line);
-   Value exit(const std::vector<Value>& args, int line);
+   Value raise(std::vector<Value>& args, Environment* env, int line);
+   Value assert(std::vector<Value>& args, Environment* env, int line);
+   Value throw_(std::vector<Value>& args, Environment* env, int line);
+   Value exit(std::vector<Value>& args, Environment* env, int line);
 
-   Value input(const std::vector<Value>& args, int line);
-   Value inputnum(const std::vector<Value>& args, int line);
-   Value inputch(const std::vector<Value>& args, int line);
+   Value input(std::vector<Value>& args, Environment* env, int line);
+   Value inputnum(std::vector<Value>& args, Environment* env, int line);
+   Value inputch(std::vector<Value>& args, Environment* env, int line);
 
-   Value string(const std::vector<Value>& args, int line);
-   Value number(const std::vector<Value>& args, int line);
-   Value char_(const std::vector<Value>& args, int line);
-   Value bool_(const std::vector<Value>& args, int line);
+   Value string(std::vector<Value>& args, Environment* env, int line);
+   Value number(std::vector<Value>& args, Environment* env, int line);
+   Value char_(std::vector<Value>& args, Environment* env, int line);
+   Value bool_(std::vector<Value>& args, Environment* env, int line);
 }
 
 #endif

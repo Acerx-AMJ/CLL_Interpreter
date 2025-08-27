@@ -144,8 +144,10 @@ struct Array : public ValueLiteral {
    Value copy() const override;
 };
 
+class Environment;
+
 struct NativeFn : public ValueLiteral {
-   using Func = std::function<Value(const std::vector<Value>&, int)>;
+   using Func = std::function<Value(std::vector<Value>&, Environment*, int)>;
    Func call;
    std::string identifier;
 
@@ -160,8 +162,6 @@ struct NativeFn : public ValueLiteral {
    bool as_bool() const override;
    Value copy() const override;
 };
-
-class Environment;
 
 struct Function : public ValueLiteral {
    std::string identifier;

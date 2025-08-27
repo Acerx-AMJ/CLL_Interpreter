@@ -66,6 +66,29 @@ Value ValueLiteral::add(Value& other) const {
    auto t1 = type, t2 = other->type;
    if (any(t1, t2, ValueType::null)) {
       return NullValue::make(line);
+   } else if (t1 == t2 && t1 == ValueType::array) {
+      auto copy1 = this->copy();
+      auto copy2 = other->copy();
+
+      auto& array1 = get_value<Array>(copy1);
+      auto& array2 = get_value<Array>(copy2);
+
+      for (auto& element : array2.array) {
+         array1.array.push_back(std::move(element));
+      }
+      return std::move(copy1);
+   } else if (t1 == ValueType::array) {
+      auto copy = this->copy();
+      auto& array = get_value<Array>(copy);
+
+      array.array.push_back(other->copy());
+      return std::move(copy);
+   } else if (t2 == ValueType::array) {
+      auto copy = other->copy();
+      auto& array = get_value<Array>(copy);
+
+      array.array.insert(array.array.begin(), this->copy());
+      return std::move(copy);
    } else if (any(t1, t2, ValueType::string)) {
       return StringValue::make(as_string() + other->as_string(), line);
    } else if (!any(t1, t2, ValueType::identifier)) {
@@ -178,6 +201,22 @@ bool ValueLiteral::equal(Value& other) const {
       return t1 == t2;
    } else if (any(t1, t2, ValueType::boolean)) {
       return as_bool() == other->as_bool();
+   } else if (t1 == t2 && t1 == ValueType::array) {
+      const auto& array1 = static_cast<const Array&>(*this);
+      auto& array2 = get_value<Array>(other);
+
+      if (array1.array.size() != array2.array.size()) {
+         return false;
+      }
+
+      for (int i = 0; i < array1.array.size(); ++i) {
+         if (!array1.array.at(i)->equal(array2.array.at(i))) {
+            return false;
+         }
+      }
+      return true;
+   } else if (any(t1, t2, ValueType::array)) {
+      return false;
    } else if (!any(t1, t2, ValueType::string) && !any(t1, t2, ValueType::identifier)) {
       return as_number() == other->as_number();
    } else {
@@ -187,7 +226,7 @@ bool ValueLiteral::equal(Value& other) const {
 
 bool ValueLiteral::greater(Value& other, const std::string& op) const {
    auto t1 = type, t2 = other->type;
-   fmt::raise_if(line, any(t1, t2, ValueType::null) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' {} '{}'.", value_type_str[int(t1)], op, value_type_str[int(t2)]);
+   fmt::raise_if(line, any(t1, t2, ValueType::null) || any(t1, t2, ValueType::identifier) || any(t1, t2, ValueType::array), "Invalid binary operation: '{}' {} '{}'.", value_type_str[int(t1)], op, value_type_str[int(t2)]);
 
    if (any(t1, t2, ValueType::string)) {
       std::string s1 = as_string(), s2 = other->as_string();

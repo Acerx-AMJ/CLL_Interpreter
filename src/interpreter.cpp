@@ -1,6 +1,7 @@
 #include "interpreter.hpp"
 
 #include "fmt.hpp"
+#include "properties.hpp"
 
 Value Interpreter::evaluate(Program& program, Environment& env) {
    Value last;
@@ -13,6 +14,10 @@ Value Interpreter::evaluate(Program& program, Environment& env) {
          while (!return_stack.empty()) {
             return_stack.pop();
          }
+         return std::move(last);
+      }
+
+      if (should_break || should_continue) {
          return std::move(last);
       }
    }
@@ -31,8 +36,6 @@ Value Interpreter::evaluate_stmt(Environment& env, Stmt stmt) {
       return evaluate_del_stmt(env, std::move(stmt));
    case StmtType::exists:
       return evaluate_exists_stmt(env, std::move(stmt));
-   case StmtType::sizeof_stmt:
-      return evaluate_size_of_stmt(env, std::move(stmt));
    case StmtType::ifelse:
       return evaluate_if_else_stmt(env, std::move(stmt));
    case StmtType::while_loop:
@@ -115,20 +118,6 @@ Value Interpreter::evaluate_exists_stmt(Environment& env, Stmt stmt) {
    auto& exists = get_stmt<ExistsStmt>(stmt);
    auto& identifier = get_stmt<IdentLiteral>(exists.identifier);
    return BoolValue::make(env.variable_exists(identifier.identifier), exists.line);
-}
-
-Value Interpreter::evaluate_size_of_stmt(Environment& env, Stmt stmt) {
-   auto& size_of = get_stmt<SizeOfStmt>(stmt);
-   auto value = evaluate_stmt(env, std::move(size_of.stmt));
-
-   switch (value->type) {
-   case ValueType::array:
-      return NumberValue::make(get_value<Array>(value).array.size(), value->line);
-   case ValueType::string:
-      return NumberValue::make(get_value<StringValue>(value).string.size(), value->line);
-   default:
-      fmt::raise(value->line, "Cannot get the size of '{}'.", value_type_str[int(value->type)]);
-   }
 }
 
 Value Interpreter::evaluate_if_else_stmt(Environment& env, Stmt stmt) {
@@ -234,6 +223,8 @@ Value Interpreter::evaluate_expr(Environment& env, Stmt expr) {
       return evaluate_unary_expr(env, std::move(expr));
    case StmtType::member:
       return evaluate_member_access(env, std::move(expr));
+   case StmtType::property:
+      return evaluate_property_access(env, std::move(expr));
    case StmtType::call:
       return evaluate_call_expr(env, std::move(expr));
    default:
@@ -360,6 +351,39 @@ Value Interpreter::evaluate_member_access(Environment& env, Stmt expr) {
    }
 }
 
+Value Interpreter::evaluate_property_access(Environment& env, Stmt expr) {
+   auto& prop = get_stmt<PropertyAccess>(expr);
+   auto original_left = prop.left->copy();
+   auto left = evaluate_stmt(env, std::move(prop.left));
+
+   for (auto& property : prop.right) {
+      auto& call = get_stmt<CallExpr>(property);
+      auto identifier = get_stmt<IdentLiteral>(call.identifier).identifier;
+      fmt::raise_if(prop.line, !prop::exists(identifier, left->type), "Property '{}' for type '{}' does not exist.", identifier, value_type_str[int(left->type)]);
+
+      auto value = prop::get(identifier, left->type);
+      fmt::raise_if(prop.line, value->type != ValueType::native_fn, "Cannot call property '{}' as it is not a function, but '{}' instead.", identifier, value_type_str[int(left->type)]);
+
+      auto& args = get_stmt<ArgsListExpr>(call.args);
+      std::vector<Value> arg_list;
+
+      arg_list.push_back((original_left->type == StmtType::identifier ? IdentValue::make(get_stmt<IdentLiteral>(original_left).identifier, original_left->line) : NullValue::make(original_left->line)));
+      arg_list.push_back(left->copy());
+
+      for (auto& arg : args.args) {
+         arg_list.push_back(evaluate_stmt(env, std::move(arg)));
+      }
+
+      bool overrides = prop::overrides(identifier, left->type);
+      left = call_function(env, std::move(value), arg_list, prop.line);
+
+      if (!overrides) {
+         original_left = NullLiteral::make();
+      }
+   }
+   return left;
+}
+
 Value Interpreter::evaluate_assignment(Environment& env, Stmt expr) {
    auto& assignment = get_stmt<AssignmentExpr>(expr);
    fmt::raise_if(assignment.left->line, assignment.left->type != StmtType::identifier, "Expected an 'IdentifierLiteral' at the left side of the '{}' operator, got '{}'.", type_str[int(assignment.op)], stmt_type_str[int(assignment.left->type)]);
@@ -445,7 +469,7 @@ Value Interpreter::evaluate_primary_expr(Environment& env, Stmt expr) {
 Value Interpreter::call_function(Environment& env, Value func, std::vector<Value>& args, int line) {
    if (func->type == ValueType::native_fn) {
       auto& native = get_value<NativeFn>(func);
-      return native.call(args, line);
+      return native.call(args, &env, line);
    } else if (func->type == ValueType::fn) {
       auto& fn = get_value<Function>(func);
       fmt::raise_if(line, args.size() > fn.parameters.size() || args.size() < fn.parameters.size() - fn.def_args, "Expected 'CallExpression' argument count to match function declaration parameter count. {} != {}.", args.size(), fn.parameters.size());

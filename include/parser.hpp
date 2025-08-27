@@ -16,7 +16,6 @@ class Parser {
    Stmt parse_fn_decl();
    Stmt parse_del_stmt();
    Stmt parse_exists_stmt();
-   Stmt parse_size_of_stmt();
    Stmt parse_if_else_stmt();
    Stmt parse_if_clause();
    Stmt parse_while_loop();
@@ -42,6 +41,7 @@ class Parser {
    Stmt parse_unary_expr();
    Stmt parse_reverse_unary_expr();
 
+   Stmt parse_property_access();
    Stmt parse_call_expr();
    Stmt parse_args_list();
    Stmt parse_member_access();
