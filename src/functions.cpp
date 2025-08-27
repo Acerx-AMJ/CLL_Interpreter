@@ -1,7 +1,12 @@
 #include "functions.hpp"
+
+// Includes
+
 #include "fmt.hpp"
 #include <iostream>
 #include <limits>
+
+// Functions
 
 namespace fun {
    // Print/Format functions
@@ -56,7 +61,7 @@ namespace fun {
       return StringValue::make(fmt::format_v(base.c_str(), arguments), line);
    }
 
-   // Error commands
+   // Error/exit functions
 
    Value raise(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.empty() || args.at(0)->type != ValueType::string, "'raise': Expected at least one argument and expected the first argument to be a string.");
@@ -87,7 +92,7 @@ namespace fun {
       err::exit((args.empty() ? 0 : args.at(0)->as_number()));
    }
 
-   // Input commands
+   // Input functions
 
    Value input(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 1, "'input': Expected no arguments or a single argument.");
@@ -123,7 +128,7 @@ namespace fun {
       return CharValue::make(user_input, line);
    }
 
-   // Convert functions
+   // Type conversion functions
 
    Value string(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() > 1, "'string': Expected no arguments or a single argument.");

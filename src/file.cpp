@@ -1,8 +1,12 @@
 #include "file.hpp"
 
+// Includes
+
 #include "fmt.hpp"
 #include <filesystem>
 #include <fstream>
+
+// File
 
 namespace file {
    bool exists(const std::string& file) {

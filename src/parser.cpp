@@ -1,5 +1,10 @@
 #include "parser.hpp"
+
+// Includes
+
 #include "fmt.hpp"
+
+// Parse functions
 
 Parser::Parser(std::vector<Token>& tokens)
    : tokens(tokens) {}
@@ -12,6 +17,8 @@ Program& Parser::parse() {
 }
 
 // Parse statement functions
+
+// Parse statement
 
 Stmt Parser::parse_stmt() {
    auto& token = current();
@@ -47,6 +54,8 @@ Stmt Parser::parse_stmt() {
    }
    return parse_expr();
 }
+
+// Parse variable declaration statement
 
 Stmt Parser::parse_var_decl() {
    bool constant = current().lexeme == "con"s;
@@ -85,6 +94,8 @@ Stmt Parser::parse_var_decl() {
    fmt::raise_if(line(), constant, "Expected constant variableto have initialized value.");
    return VarDeclaration::make(constant, std::move(identifiers), std::move(body), line());
 }
+
+// Parse function declaration statement
 
 Stmt Parser::parse_fn_decl() {
    advance();
@@ -146,12 +157,16 @@ Stmt Parser::parse_fn_decl() {
    return parse_unless_stmt(FnDeclaration::make(std::move(identifier), std::move(arguments), std::move(argument_def), std::move(returns), std::move(return_def), std::move(body), def_args, original_line));
 }
 
+// Parse exists statement
+
 Stmt Parser::parse_exists_stmt() {
    advance();
    auto identifier = parse_primary_expr();
    fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected identifier after 'exists' statement, got '{}' instead.", stmt_type_str[int(identifier->type)]);
    return ExistsStmt::make(std::move(identifier), line());
 }
+
+// Parse delete statement
 
 Stmt Parser::parse_del_stmt() {
    advance();
@@ -172,6 +187,8 @@ Stmt Parser::parse_del_stmt() {
    return parse_unless_stmt(DeleteStmt::make(std::move(identifiers), line()));
 }
 
+// Parse if-else statement
+
 Stmt Parser::parse_if_else_stmt() {
    auto ifclause = parse_if_clause();
    std::vector<Stmt> elifclauses;
@@ -188,6 +205,8 @@ Stmt Parser::parse_if_else_stmt() {
    return parse_unless_stmt(IfElseStmt::make(std::move(ifclause), std::move(elifclauses), line()));
 }
 
+// Parse if clause statement
+
 Stmt Parser::parse_if_clause() {
    std::string keyword = current().lexeme;
    advance();
@@ -196,6 +215,8 @@ Stmt Parser::parse_if_clause() {
    auto stmt = parse_block();
    return IfClauseStmt::make(keyword, std::move(expr), std::move(stmt), line());
 }
+
+// Parse while loop statement
 
 Stmt Parser::parse_while_loop() {
    advance();
@@ -209,6 +230,8 @@ Stmt Parser::parse_while_loop() {
    auto stmt = parse_block();
    return parse_unless_stmt(WhileStmt::make(false, std::move(expr), std::move(stmt), line()));
 }
+
+// Parse for loop statement
 
 Stmt Parser::parse_for_loop() {
    advance();
@@ -239,6 +262,8 @@ Stmt Parser::parse_for_loop() {
    return parse_unless_stmt(ForStmt::make(std::move(initexpr), std::move(condition), std::move(loopexpr), std::move(stmt), line()));
 }
 
+// Parse block (scope/do statement)
+
 Stmt Parser::parse_block() {
    if (is(Type::keyword) && current().lexeme == "do"s) {
       advance();
@@ -251,11 +276,15 @@ Stmt Parser::parse_block() {
    return parse_primary_expr();
 }
 
+// Parse return statement
+
 Stmt Parser::parse_return_stmt() {
    advance();
    auto expr = ReturnStmt::make(parse_expr(), line());
    return parse_unless_stmt(std::move(expr));
 }
+
+// Parse unless statement
 
 Stmt Parser::parse_unless_stmt(Stmt stmt) {
    if (is(Type::keyword) && current().lexeme == "unless"s) {
@@ -268,9 +297,13 @@ Stmt Parser::parse_unless_stmt(Stmt stmt) {
 
 // Parse expression functions
 
+// Parse expression
+
 Stmt Parser::parse_expr() {
    return parse_ternary_expr();
 }
+
+// Parse ternary expression
 
 Stmt Parser::parse_ternary_expr() {
    auto left = parse_value_or_expr();
@@ -288,6 +321,8 @@ Stmt Parser::parse_ternary_expr() {
    return std::move(left);
 }
 
+// Parse value or expression
+
 Stmt Parser::parse_value_or_expr() {
    auto left = parse_assignment_expr();
 
@@ -300,6 +335,8 @@ Stmt Parser::parse_value_or_expr() {
    }
    return std::move(left);
 }
+
+// Parse assignment expression
 
 Stmt Parser::parse_assignment_expr() {
    auto left = parse_logical_or_expr();
@@ -314,6 +351,8 @@ Stmt Parser::parse_assignment_expr() {
    return std::move(left);
 }
 
+// Parse logical or expression
+
 Stmt Parser::parse_logical_or_expr() {
    auto left = parse_logical_and_expr();
 
@@ -326,6 +365,8 @@ Stmt Parser::parse_logical_or_expr() {
    }
    return std::move(left);
 }
+
+// Parse logical and expression
 
 Stmt Parser::parse_logical_and_expr() {
    auto left = parse_equality_expr();
@@ -340,6 +381,8 @@ Stmt Parser::parse_logical_and_expr() {
    return std::move(left);
 }
 
+// Parse equality expression
+
 Stmt Parser::parse_equality_expr() {
    auto left = parse_relational_expr();
 
@@ -352,6 +395,8 @@ Stmt Parser::parse_equality_expr() {
    }
    return std::move(left);
 }
+
+// Parse relational expression
 
 Stmt Parser::parse_relational_expr() {
    auto left = parse_additive_expr();
@@ -366,6 +411,8 @@ Stmt Parser::parse_relational_expr() {
    return std::move(left);
 }
 
+// Parse additive expression
+
 Stmt Parser::parse_additive_expr() {
    auto left = parse_multiplicative_expr();
 
@@ -378,6 +425,8 @@ Stmt Parser::parse_additive_expr() {
    }
    return std::move(left);
 }
+
+// Parse multiplicative expression
 
 Stmt Parser::parse_multiplicative_expr() {
    auto left = parse_exponentiative_expr();
@@ -392,6 +441,8 @@ Stmt Parser::parse_multiplicative_expr() {
    return std::move(left);
 }
 
+// Parse exponentiative expression
+
 Stmt Parser::parse_exponentiative_expr() {
    auto left = parse_unary_expr();
 
@@ -404,6 +455,8 @@ Stmt Parser::parse_exponentiative_expr() {
    }
    return std::move(left);
 }
+
+// Parse unary expression
 
 Stmt Parser::parse_unary_expr() {
    std::vector<Type> ops;
@@ -419,6 +472,8 @@ Stmt Parser::parse_unary_expr() {
    return expr;
 }
 
+// Parse reverse unary expression (increment and decrement operators)
+
 Stmt Parser::parse_reverse_unary_expr() {
    auto expr = parse_property_access();
    if (is(Type::increment) || is(Type::decrement)) {
@@ -428,6 +483,8 @@ Stmt Parser::parse_reverse_unary_expr() {
    }
    return expr;
 }
+
+// Parse property access expression
 
 Stmt Parser::parse_property_access() {
    auto left = parse_call_expr();
@@ -445,6 +502,8 @@ Stmt Parser::parse_property_access() {
    return PropertyAccess::make(std::move(left), std::move(right), line());
 }
 
+// Parse call expression
+
 Stmt Parser::parse_call_expr() {
    auto identifier = parse_member_access();
    if (identifier->type != StmtType::identifier) {
@@ -458,6 +517,8 @@ Stmt Parser::parse_call_expr() {
    }
    return std::move(identifier);
 }
+
+// Parse argument list expression
 
 Stmt Parser::parse_args_list() {
    if (!is(Type::l_paren)) {
@@ -488,6 +549,8 @@ Stmt Parser::parse_args_list() {
    return ArgsListExpr::make(std::move(args), line());
 }
 
+// Parse member access expression
+
 Stmt Parser::parse_member_access() {
    auto left = parse_primary_expr();
 
@@ -500,6 +563,8 @@ Stmt Parser::parse_member_access() {
    }
    return std::move(left);
 }
+
+// Parse primary expression (literal)
 
 Stmt Parser::parse_primary_expr() {
    if (is(Type::identifier)) {

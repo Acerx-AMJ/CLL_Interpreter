@@ -1,9 +1,13 @@
+// Includes
+
 #include "file.hpp"
 #include "fmt.hpp"
 #include "interpreter.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "properties.hpp"
+
+// Main program entry point
 
 int main(int argc, char* argv[]) {
    fmt::raise_if(err::nline, argc != 2, "Expected 2 arguments, got {} instead.", argc);

@@ -1,7 +1,11 @@
 #ifndef ERROR_HPP
 #define ERROR_HPP
 
+// Includes
+
 #include <string>
+
+// Errors
 
 namespace err {
    constexpr int nline = -1;

@@ -1,11 +1,15 @@
 #ifndef TOKENS_HPP
 #define TOKENS_HPP
 
+// Includes
+
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 
 using namespace std::string_literals;
+
+// Token type
 
 enum class Type : char {
    eof, keyword, identifier, number, character, string,
@@ -25,11 +29,15 @@ constexpr std::string_view type_str[] {
    "->", "(", ")", "{", "}", "[", "]", ",", ".", ";"
 };
 
+// Token struct
+
 struct Token {
    Type type {};
    std::string lexeme;
    int line = 0;
 };
+
+// Operator map
 
 static constexpr int max_op_size = 3;
 static std::unordered_map<std::string_view, Type> operators {
@@ -39,6 +47,8 @@ static std::unordered_map<std::string_view, Type> operators {
    {"&&", Type::log_and}, {"||", Type::log_or}, {"!", Type::log_not}, {"%%", Type::divisible}, {"??", Type::binary_cond}, {"?", Type::quesion}, {":", Type::colon}, {"==", Type::equals}, {"===", Type::really_equals}, {"!=", Type::not_equals}, {"!==", Type::really_not_equals}, {">", Type::greater}, {">=", Type::greater_equal}, {"<", Type::smaller}, {"<=", Type::smaller_equal},
    {"->", Type::arrow}, {"(", Type::l_paren}, {")", Type::r_paren}, {"{", Type::l_brace}, {"}", Type::r_brace}, {"[", Type::l_bracket}, {"]", Type::r_bracket}, {",", Type::comma}, {".", Type::dot}, {";", Type::semicolon}
 };
+
+// Keyword maps
 
 static std::unordered_set<std::string_view> keywords {
    "let", "con", "delete", "exists",

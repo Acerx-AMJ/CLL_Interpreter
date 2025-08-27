@@ -1,7 +1,11 @@
 #include "environment.hpp"
 
+// Includes
+
 #include "fmt.hpp"
 #include "functions.hpp"
+
+// Constructors
 
 Environment::Environment(Environment* parent)
    : parent(parent) {}
@@ -34,6 +38,8 @@ Environment::Environment()
    declare_variable("bool"s, NativeFn::make(fun::bool_, "bool"s, err::nline), true, err::nline);
 }
 
+// Edit functions
+
 void Environment::declare_variable(const std::string& identifier, Value value, bool constant, int line) {
    fmt::raise_if(line, constants.find(identifier) != constants.end(), "Cannot shadow constant variable '{}'.", identifier);
    if (constant)
@@ -54,6 +60,8 @@ void Environment::delete_variable(const std::string& identifier, int line) {
    fmt::raise_if(line, env.variables.find(identifier) == env.variables.end(), "Cannot delete variable '{}' as it does not exist in the given scope.", identifier);
    env.variables.erase(identifier);
 }
+
+// Access functions
 
 bool Environment::variable_exists(const std::string& identifier) {
    if (variables.find(identifier) != variables.end())

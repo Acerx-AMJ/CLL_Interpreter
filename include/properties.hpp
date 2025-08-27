@@ -1,7 +1,11 @@
 #ifndef PROPERTIES_HPP
 #define PROPERTIES_HPP
 
+// Includes
+
 #include "values.hpp"
+
+// Properties
 
 namespace prop {
    // Property functions

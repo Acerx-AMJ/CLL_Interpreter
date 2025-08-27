@@ -1,5 +1,7 @@
 #include "values.hpp"
 
+// Includes
+
 #include "fmt.hpp"
 #include <cmath>
 #include <iostream>
@@ -23,6 +25,10 @@ void ValueLiteral::print() const {
    std::cout << as_string();
 }
 
+// Operator functions
+
+// Unary negation operator
+
 Value ValueLiteral::negate() const {
    auto t1 = type;
    if (t1 == ValueType::number) {
@@ -35,6 +41,8 @@ Value ValueLiteral::negate() const {
       fmt::raise(line, "Invalid unary operation: - '{}'.", value_type_str[int(t1)]);
    }
 }
+
+// Unary increment operator
 
 Value ValueLiteral::increment() const {
    auto t1 = type;
@@ -49,6 +57,8 @@ Value ValueLiteral::increment() const {
    }
 }
 
+// Unary decrement operator
+
 Value ValueLiteral::decrement() const {
    auto t1 = type;
    if (t1 == ValueType::number) {
@@ -61,6 +71,8 @@ Value ValueLiteral::decrement() const {
       fmt::raise(line, "Invalid unary operation: '{}' --.", value_type_str[int(t1)]);
    }
 }
+
+// Binary add operator
 
 Value ValueLiteral::add(Value& other) const {
    auto t1 = type, t2 = other->type;
@@ -104,6 +116,8 @@ Value ValueLiteral::add(Value& other) const {
    }
 }
 
+// Binary subtraction operator
+
 Value ValueLiteral::subtract(Value& other) const {
    auto t1 = type, t2 = other->type;
    fmt::raise_if(line, any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' - '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
@@ -118,6 +132,8 @@ Value ValueLiteral::subtract(Value& other) const {
       return BoolValue::make(as_number() - other->as_number(), line);
    }
 }
+
+// Binary multiplication operator
 
 Value ValueLiteral::multiply(Value& other) const {
    auto t1 = type, t2 = other->type;
@@ -144,6 +160,8 @@ Value ValueLiteral::multiply(Value& other) const {
    }
 }
 
+// Binary division operator
+
 Value ValueLiteral::divide(Value& other) const {
    auto t1 = type, t2 = other->type;
    fmt::raise_if(line, any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' / '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
@@ -161,6 +179,8 @@ Value ValueLiteral::divide(Value& other) const {
       return BoolValue::make(as_number() / other->as_number(), line);
    }
 }
+
+// Binary remainder operator
 
 Value ValueLiteral::remainder(Value& other) const {
    auto t1 = type, t2 = other->type;
@@ -180,6 +200,8 @@ Value ValueLiteral::remainder(Value& other) const {
    }
 }
 
+// Binary exponentiation operator
+
 Value ValueLiteral::exponentiate(Value& other) const {
    auto t1 = type, t2 = other->type;
    fmt::raise_if(line, any(t1, t2, ValueType::string) || any(t1, t2, ValueType::identifier), "Invalid binary operation: '{}' ** '{}'.", value_type_str[int(t1)], value_type_str[int(t2)]);
@@ -194,6 +216,8 @@ Value ValueLiteral::exponentiate(Value& other) const {
       return BoolValue::make(std::pow(as_number(), other->as_number()), line);
    }
 }
+
+// Binary equality operator
 
 bool ValueLiteral::equal(Value& other) const {
    auto t1 = type, t2 = other->type;
@@ -224,6 +248,8 @@ bool ValueLiteral::equal(Value& other) const {
    }
 }
 
+// Binary greater-than operator
+
 bool ValueLiteral::greater(Value& other, const std::string& op) const {
    auto t1 = type, t2 = other->type;
    fmt::raise_if(line, any(t1, t2, ValueType::null) || any(t1, t2, ValueType::identifier) || any(t1, t2, ValueType::array), "Invalid binary operation: '{}' {} '{}'.", value_type_str[int(t1)], op, value_type_str[int(t2)]);
@@ -243,6 +269,8 @@ bool ValueLiteral::greater(Value& other, const std::string& op) const {
       return as_number() > other->as_number();
    }
 }
+
+// Values
 
 // Identifier value
 
@@ -408,7 +436,7 @@ Value Array::copy() const {
    return Array::make(std::move(copied_array), line);
 }
 
-// Native function
+// Native (built-in) function
 
 NativeFn::NativeFn(const Func& call, const std::string& identifier, int line)
    : call(call), identifier(identifier), ValueLiteral(ValueType::native_fn, line) {}
@@ -433,7 +461,7 @@ Value NativeFn::copy() const {
    return NativeFn::make(call, identifier, line);
 }
 
-// Function
+// User-defined function value
 
 Function::Function(const std::string& identifier, const std::vector<std::string>& parameters, std::vector<Value> parameter_def, const std::string& returns, Value return_def, Environment* env, Stmt body, int def_args, int line)
    : identifier(identifier), parameters(parameters), parameter_def(std::move(parameter_def)), returns(returns), return_def(std::move(return_def)), env(env), body(std::move(body)), def_args(def_args), ValueLiteral(ValueType::fn, line) {}

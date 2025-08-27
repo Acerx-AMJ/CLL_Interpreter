@@ -1,7 +1,11 @@
 #include "interpreter.hpp"
 
+// Includes
+
 #include "fmt.hpp"
 #include "properties.hpp"
+
+// Evaluation functions
 
 Value Interpreter::evaluate(Program& program, Environment& env) {
    Value last;
@@ -24,7 +28,46 @@ Value Interpreter::evaluate(Program& program, Environment& env) {
    return std::move(last);
 }
 
-// Evaluate statement functions
+Value Interpreter::call_function(Environment& env, Value func, std::vector<Value>& args, int line) {
+   if (func->type == ValueType::native_fn) {
+      auto& native = get_value<NativeFn>(func);
+      return native.call(args, &env, line);
+   } else if (func->type == ValueType::fn) {
+      auto& fn = get_value<Function>(func);
+      fmt::raise_if(line, args.size() > fn.parameters.size() || args.size() < fn.parameters.size() - fn.def_args, "Expected 'CallExpression' argument count to match function declaration parameter count. {} != {}.", args.size(), fn.parameters.size());
+      fn_stack.push(1);
+
+      Environment new_env (fn.env);
+      int def_i = 0;
+      for (int i = 0; i < fn.parameters.size(); ++i) {
+         if (i < args.size()) {
+            new_env.declare_variable(fn.parameters.at(i), std::move(args.at(i)), false, args.at(i)->line);
+            if (i >= fn.parameters.size() - fn.def_args) {
+               ++def_i;
+            }
+         } else {
+            new_env.declare_variable(fn.parameters.at(i), fn.parameter_def.at(def_i)->copy(), false, fn.parameter_def.at(def_i)->line);
+            ++def_i;
+         }
+      }
+
+      if (!fn.returns.empty()) {
+         new_env.declare_variable(fn.returns, fn.return_def->copy(), false, fn.line);
+      }
+
+      auto body_ptr = fn.body->copy();
+      auto value = evaluate(get_stmt<Program>(body_ptr), new_env);
+
+      fn_stack.pop();
+      return std::move(value);
+   } else {
+      fmt::raise(line, "Attempted to call '{}', but only 'NativeFunction' and 'Function' are callable.", value_type_str[int(func->type)]);
+   }
+}
+
+// Statement evaluation functions
+
+// Evaluate statement
 
 Value Interpreter::evaluate_stmt(Environment& env, Stmt stmt) {
    switch (stmt->type) {
@@ -61,6 +104,8 @@ Value Interpreter::evaluate_stmt(Environment& env, Stmt stmt) {
    }
 }
 
+// Evaluate variable declaration statement
+
 Value Interpreter::evaluate_var_decl(Environment& env, Stmt stmt) {
    auto& decl = get_stmt<VarDeclaration>(stmt);
    size_t isize = decl.identifiers.size(), vsize = decl.values.size();
@@ -74,6 +119,8 @@ Value Interpreter::evaluate_var_decl(Environment& env, Stmt stmt) {
    }
    return NullValue::make(decl.line);
 }
+
+// Evaluate function declaration statement
 
 Value Interpreter::evaluate_fn_decl(Environment& env, Stmt stmt) {
    auto& decl = get_stmt<FnDeclaration>(stmt);
@@ -106,6 +153,8 @@ Value Interpreter::evaluate_fn_decl(Environment& env, Stmt stmt) {
    return NullValue::make(decl.line);
 }
 
+// Evaluate delete statement
+
 Value Interpreter::evaluate_del_stmt(Environment& env, Stmt stmt) {
    auto& del = get_stmt<DeleteStmt>(stmt);
    for (const auto& identifier : del.identifiers) {
@@ -114,11 +163,15 @@ Value Interpreter::evaluate_del_stmt(Environment& env, Stmt stmt) {
    return NullValue::make(del.line);
 }
 
+// Evaluate exists statement
+
 Value Interpreter::evaluate_exists_stmt(Environment& env, Stmt stmt) {
    auto& exists = get_stmt<ExistsStmt>(stmt);
    auto& identifier = get_stmt<IdentLiteral>(exists.identifier);
    return BoolValue::make(env.variable_exists(identifier.identifier), exists.line);
 }
+
+// Evaluate if-else statement
 
 Value Interpreter::evaluate_if_else_stmt(Environment& env, Stmt stmt) {
    auto& ifelse = get_stmt<IfElseStmt>(stmt);
@@ -141,6 +194,8 @@ Value Interpreter::evaluate_if_else_stmt(Environment& env, Stmt stmt) {
    }
    return NullValue::make(ifelse.line);
 }
+
+// Evaluate while loop statement
 
 Value Interpreter::evaluate_while_loop(Environment& env, Stmt stmt) {
    auto& while_stmt = get_stmt<WhileStmt>(stmt);
@@ -165,6 +220,8 @@ Value Interpreter::evaluate_while_loop(Environment& env, Stmt stmt) {
       }
    }
 }
+
+// Evaluate for loop statement
 
 Value Interpreter::evaluate_for_loop(Environment& env, Stmt stmt) {
    auto& for_stmt = get_stmt<ForStmt>(stmt);
@@ -199,6 +256,8 @@ Value Interpreter::evaluate_for_loop(Environment& env, Stmt stmt) {
    }
 }
 
+// Evaluate unless statement
+
 Value Interpreter::evaluate_unless_stmt(Environment& env, Stmt stmt) {
    auto& unless = get_stmt<UnlessStmt>(stmt);
    if (!evaluate_stmt(env, std::move(unless.expr))->as_bool()) {
@@ -207,7 +266,9 @@ Value Interpreter::evaluate_unless_stmt(Environment& env, Stmt stmt) {
    return NullValue::make(unless.line);
 }
 
-// Evaluate expression functions
+// Expression evaluation functions
+
+// Evaluate expression
 
 Value Interpreter::evaluate_expr(Environment& env, Stmt expr) {
    switch (expr->type) {
@@ -232,11 +293,15 @@ Value Interpreter::evaluate_expr(Environment& env, Stmt expr) {
    }
 }
 
+// Evaluate ternary expression
+
 Value Interpreter::evaluate_ternary_expr(Environment& env, Stmt expr) {
    auto& ternary = get_stmt<TernaryExpr>(expr);
    auto left = evaluate_stmt(env, std::move(ternary.left));
    return std::move(evaluate_stmt(env, std::move((left->as_bool() ? ternary.middle : ternary.right))));
 }
+
+// Evaluate binary expression
 
 Value Interpreter::evaluate_binary_expr(Environment& env, Stmt expr) {
    auto& binary = get_stmt<BinaryExpr>(expr);
@@ -292,6 +357,8 @@ Value Interpreter::evaluate_binary_expr(Environment& env, Stmt expr) {
    }
 }
 
+// Evaluate unary expression
+
 Value Interpreter::evaluate_unary_expr(Environment& env, Stmt expr) {
    auto& unary = get_stmt<UnaryExpr>(expr);
 
@@ -333,6 +400,8 @@ Value Interpreter::evaluate_unary_expr(Environment& env, Stmt expr) {
    }
 }
 
+// Evaluate member access expression
+
 Value Interpreter::evaluate_member_access(Environment& env, Stmt expr) {
    auto& member = get_stmt<MemberAccess>(expr);
    auto left = evaluate_stmt(env, std::move(member.left));
@@ -350,6 +419,8 @@ Value Interpreter::evaluate_member_access(Environment& env, Stmt expr) {
       fmt::raise(member.line, "Invalid member access: '{}'['{}'].", value_type_str[int(left->type)], value_type_str[int(key->type)]);
    }
 }
+
+// Evaluate property access expression
 
 Value Interpreter::evaluate_property_access(Environment& env, Stmt expr) {
    auto& prop = get_stmt<PropertyAccess>(expr);
@@ -383,6 +454,8 @@ Value Interpreter::evaluate_property_access(Environment& env, Stmt expr) {
    }
    return left;
 }
+
+// Evaluate assignment expression
 
 Value Interpreter::evaluate_assignment(Environment& env, Stmt expr) {
    auto& assignment = get_stmt<AssignmentExpr>(expr);
@@ -420,6 +493,8 @@ Value Interpreter::evaluate_assignment(Environment& env, Stmt expr) {
    return std::move(value);
 }
 
+// Evaluate call expression
+
 Value Interpreter::evaluate_call_expr(Environment& env, Stmt expr) {
    auto& call = get_stmt<CallExpr>(expr);
    std::vector<Value> args;
@@ -432,6 +507,8 @@ Value Interpreter::evaluate_call_expr(Environment& env, Stmt expr) {
       return call_function(env, env.get_variable(get_stmt<IdentLiteral>(call.identifier).identifier, call.line), args, call.line);
    }
 }
+
+// Evaluate primary expressions (literals)
 
 Value Interpreter::evaluate_primary_expr(Environment& env, Stmt expr) {
    switch (expr->type) {
@@ -463,43 +540,5 @@ Value Interpreter::evaluate_primary_expr(Environment& env, Stmt expr) {
    }
    default:
       fmt::raise(expr->line, "Unexpected expression while evaluating: '{}'.", stmt_type_str[int(expr->type)]);
-   }
-}
-
-Value Interpreter::call_function(Environment& env, Value func, std::vector<Value>& args, int line) {
-   if (func->type == ValueType::native_fn) {
-      auto& native = get_value<NativeFn>(func);
-      return native.call(args, &env, line);
-   } else if (func->type == ValueType::fn) {
-      auto& fn = get_value<Function>(func);
-      fmt::raise_if(line, args.size() > fn.parameters.size() || args.size() < fn.parameters.size() - fn.def_args, "Expected 'CallExpression' argument count to match function declaration parameter count. {} != {}.", args.size(), fn.parameters.size());
-      fn_stack.push(1);
-
-      Environment new_env (fn.env);
-      int def_i = 0;
-      for (int i = 0; i < fn.parameters.size(); ++i) {
-         if (i < args.size()) {
-            new_env.declare_variable(fn.parameters.at(i), std::move(args.at(i)), false, args.at(i)->line);
-            if (i >= fn.parameters.size() - fn.def_args) {
-               ++def_i;
-            }
-         } else {
-            new_env.declare_variable(fn.parameters.at(i), fn.parameter_def.at(def_i)->copy(), false, fn.parameter_def.at(def_i)->line);
-            ++def_i;
-         }
-      }
-
-      if (!fn.returns.empty()) {
-         new_env.declare_variable(fn.returns, fn.return_def->copy(), false, fn.line);
-      }
-
-      // Dirty solution to getting a copy of a program
-      auto body_ptr = fn.body->copy();
-      auto value = evaluate(static_cast<Program&>(*body_ptr.get()), new_env);
-
-      fn_stack.pop();
-      return std::move(value);
-   } else {
-      fmt::raise(line, "Attempted to call '{}', but only 'NativeFunction' and 'Function' are callable.", value_type_str[int(func->type)]);
    }
 }

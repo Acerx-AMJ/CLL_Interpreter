@@ -1,10 +1,14 @@
 #ifndef AST_HPP
 #define AST_HPP
 
+// Includes
+
 #include "tokens.hpp"
 #include <memory>
 #include <optional>
 #include <vector>
+
+// Statement types
 
 enum class StmtType : char {
    var_decl, fn_decl, exists, del, ifelse, if_clause, while_loop, for_loop,
@@ -21,6 +25,8 @@ constexpr std::string_view stmt_type_str[] {
    "CallExpression", "ArgumentListExpression",
    "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "ArrayLiteral", "NullLiteral", "Program"
 };
+
+// Statement definition
 
 struct Statement;
 using Stmt = std::unique_ptr<Statement>;
@@ -44,6 +50,10 @@ struct Statement {
    virtual Stmt copy() const = 0;
 };
 
+// Statements
+
+// Variable declaration statement
+
 struct VarDeclaration : public Statement {
    bool constant = false;
    std::vector<Stmt> identifiers;
@@ -55,6 +65,8 @@ struct VarDeclaration : public Statement {
    }
    Stmt copy() const override;
 };
+
+// Function declaration statement
 
 struct FnDeclaration : public Statement {
    Stmt identifier;
@@ -72,6 +84,8 @@ struct FnDeclaration : public Statement {
    Stmt copy() const override;
 };
 
+// Exists statement
+
 struct ExistsStmt : public Statement {
    Stmt identifier;
 
@@ -82,6 +96,8 @@ struct ExistsStmt : public Statement {
    Stmt copy() const override;
 };
 
+// Delete statement
+
 struct DeleteStmt : public Statement {
    std::vector<Stmt> identifiers;
 
@@ -91,6 +107,8 @@ struct DeleteStmt : public Statement {
    }
    Stmt copy() const override;
 };
+
+// If-else statement
 
 struct IfElseStmt : public Statement {
    Stmt ifclause;
@@ -107,6 +125,8 @@ struct IfElseStmt : public Statement {
    Stmt copy() const override;
 };
 
+// If clause statement
+
 struct IfClauseStmt : public Statement {
    std::string keyword;
    Stmt expr;
@@ -119,6 +139,8 @@ struct IfClauseStmt : public Statement {
    Stmt copy() const override;
 };
 
+// While loop statement
+
 struct WhileStmt : public Statement {
    bool infinite;
    Stmt expr;
@@ -130,6 +152,8 @@ struct WhileStmt : public Statement {
    }
    Stmt copy() const override;
 };
+
+// For loop statement
 
 struct ForStmt : public Statement {
    std::optional<Stmt> initexpr;
@@ -144,17 +168,23 @@ struct ForStmt : public Statement {
    Stmt copy() const override;
 };
 
+// Break statement
+
 struct BreakStmt : public Statement {
    BreakStmt(int line);
    static Stmt make(int line) { return std::make_unique<BreakStmt>(line); }
    Stmt copy() const override;
 };
 
+// Continue statement
+
 struct ContinueStmt : public Statement {
    ContinueStmt(int line);
    static Stmt make(int line) { return std::make_unique<ContinueStmt>(line); }
    Stmt copy() const override;
 };
+
+// Return statement
 
 struct ReturnStmt : public Statement {
    Stmt value;
@@ -166,6 +196,8 @@ struct ReturnStmt : public Statement {
    Stmt copy() const override;
 };
 
+// Unless statement
+
 struct UnlessStmt : public Statement {
    Stmt expr;
    Stmt stmt;
@@ -176,6 +208,10 @@ struct UnlessStmt : public Statement {
    }
    Stmt copy() const override;
 };
+
+// Expressions
+
+// Assignment expression
 
 struct AssignmentExpr : public Statement {
    Type op;
@@ -189,6 +225,8 @@ struct AssignmentExpr : public Statement {
    Stmt copy() const override;
 };
 
+// Ternary expression
+
 struct TernaryExpr : public Statement {
    Stmt left;
    Stmt middle;
@@ -200,6 +238,8 @@ struct TernaryExpr : public Statement {
    }
    Stmt copy() const override;
 };
+
+// Binary expression
 
 struct BinaryExpr : public Statement {
    Type op;
@@ -213,6 +253,8 @@ struct BinaryExpr : public Statement {
    Stmt copy() const override;
 };
 
+// Unary expression
+
 struct UnaryExpr : public Statement {
    Type op;
    Stmt value;
@@ -223,6 +265,8 @@ struct UnaryExpr : public Statement {
    }
    Stmt copy() const override;
 };
+
+// Member access expression
 
 struct MemberAccess : public Statement {
    Stmt left;
@@ -235,6 +279,8 @@ struct MemberAccess : public Statement {
    Stmt copy() const override;
 };
 
+// Property access expression
+
 struct PropertyAccess : public Statement {
    Stmt left;
    std::vector<Stmt> right;
@@ -245,6 +291,8 @@ struct PropertyAccess : public Statement {
    }
    Stmt copy() const override;
 };
+
+// Call expression
 
 struct CallExpr : public Statement {
    Stmt args;
@@ -258,6 +306,8 @@ struct CallExpr : public Statement {
    Stmt copy() const override;
 };
 
+// Argument list expression
+
 struct ArgsListExpr : public Statement {
    std::vector<Stmt> args;
 
@@ -269,6 +319,10 @@ struct ArgsListExpr : public Statement {
    Stmt copy() const override;
 };
 
+// Literals
+
+// Identifier literal
+
 struct IdentLiteral : public Statement {
    std::string identifier;
 
@@ -278,6 +332,8 @@ struct IdentLiteral : public Statement {
    }
    Stmt copy() const override;
 };
+
+// Number literal
 
 struct NumberLiteral : public Statement {
    long double number;
@@ -290,6 +346,8 @@ struct NumberLiteral : public Statement {
    Stmt copy() const override;
 };
 
+// Character literal
+
 struct CharLiteral : public Statement {
    char ch;
 
@@ -299,6 +357,8 @@ struct CharLiteral : public Statement {
    }
    Stmt copy() const override;
 };
+
+// String literal
 
 struct StringLiteral : public Statement {
    std::string string;
@@ -310,6 +370,8 @@ struct StringLiteral : public Statement {
    Stmt copy() const override;
 };
 
+// Array literal
+
 struct ArrayLiteral : public Statement {
    std::vector<Stmt> array;
 
@@ -320,6 +382,8 @@ struct ArrayLiteral : public Statement {
    Stmt copy() const override;
 };
 
+// Null literal
+
 struct NullLiteral : public Statement {
    NullLiteral(int line = 0);
    static Stmt make(int line = 0) {
@@ -327,6 +391,8 @@ struct NullLiteral : public Statement {
    }
    Stmt copy() const override;
 };
+
+// Program (scope)
 
 struct Program : public Statement {
    std::vector<Stmt> statements;

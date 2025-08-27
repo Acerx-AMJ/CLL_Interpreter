@@ -1,10 +1,14 @@
 #ifndef VALUES_HPP
 #define VALUES_HPP
 
+// Includes
+
 #include "ast.hpp"
 #include <functional>
 #include <memory>
 #include <string>
+
+// Value type
 
 enum class ValueType : char {
    identifier, number, character, string, boolean, array, native_fn, fn, null
@@ -13,6 +17,8 @@ enum class ValueType : char {
 constexpr std::string_view value_type_str[] {
    "Identifier", "Number", "Character", "String", "Boolean", "Array", "NativeFunction", "Function", "Null"   
 };
+
+// Value literal definition
 
 struct ValueLiteral;
 using Value = std::unique_ptr<ValueLiteral>;
@@ -41,6 +47,8 @@ struct ValueLiteral {
    virtual bool as_bool() const = 0;
    virtual Value copy() const = 0;
 
+   // Operator functions
+
    Value negate() const;
    Value increment() const;
    Value decrement() const;
@@ -53,6 +61,8 @@ struct ValueLiteral {
    bool equal(Value& other) const;
    bool greater(Value& other, const std::string& op) const;
 };
+
+// Identifier value
 
 struct IdentValue : public ValueLiteral {
    std::string identifier;
@@ -69,6 +79,8 @@ struct IdentValue : public ValueLiteral {
    Value copy() const override;
 };
 
+// Number value
+
 struct NumberValue : public ValueLiteral {
    long double number;
 
@@ -83,6 +95,8 @@ struct NumberValue : public ValueLiteral {
    bool as_bool() const override;
    Value copy() const override;
 };
+
+// Character value
 
 struct CharValue : public ValueLiteral {
    char ch;
@@ -99,6 +113,8 @@ struct CharValue : public ValueLiteral {
    Value copy() const override;
 };
 
+// String value
+
 struct StringValue : public ValueLiteral {
    std::string string;
 
@@ -113,6 +129,8 @@ struct StringValue : public ValueLiteral {
    bool as_bool() const override;
    Value copy() const override;
 };
+
+// Boolean value
 
 struct BoolValue : public ValueLiteral {
    bool value;
@@ -129,6 +147,8 @@ struct BoolValue : public ValueLiteral {
    Value copy() const override;
 };
 
+// Array value
+
 struct Array : public ValueLiteral {
    std::vector<Value> array;
 
@@ -143,6 +163,8 @@ struct Array : public ValueLiteral {
    bool as_bool() const override;
    Value copy() const override;
 };
+
+// Native (built-in) function value
 
 class Environment;
 
@@ -162,6 +184,8 @@ struct NativeFn : public ValueLiteral {
    bool as_bool() const override;
    Value copy() const override;
 };
+
+// User-defined function value
 
 struct Function : public ValueLiteral {
    std::string identifier;
@@ -184,6 +208,8 @@ struct Function : public ValueLiteral {
    bool as_bool() const override;
    Value copy() const override;
 };
+
+// Null value
 
 struct NullValue : public ValueLiteral {
    NullValue(int line = -1);

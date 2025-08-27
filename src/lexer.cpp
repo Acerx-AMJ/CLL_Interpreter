@@ -1,5 +1,10 @@
 #include "lexer.hpp"
+
+// Includes
+
 #include "fmt.hpp"
+
+// Lex functions
 
 Lexer::Lexer(const std::string& code)
    : code(code) {}
@@ -138,7 +143,7 @@ std::vector<Token>& Lexer::lex() {
    return tokens;
 }
 
-// Utility functions
+// Helper functions
 
 char Lexer::current() {
    return (index >= code.size() ? 0 : code.at(index));

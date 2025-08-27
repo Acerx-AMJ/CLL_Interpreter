@@ -1,9 +1,13 @@
 #include "ast.hpp"
 
+// Statement declaration
+
 Statement::Statement(StmtType type, int line)
    : type(type), line(line) {}
 
-// Variable declaration
+// Statements
+
+// Variable declaration statement
 
 VarDeclaration::VarDeclaration(bool constant, std::vector<Stmt> identifiers, std::vector<Stmt> values, int line)
    : constant(constant), identifiers(std::move(identifiers)), values(std::move(values)), Statement(StmtType::var_decl, line) {}
@@ -20,7 +24,7 @@ Stmt VarDeclaration::copy() const {
    return VarDeclaration::make(constant, std::move(copied_identifiers), std::move(copied_values), line);
 }
 
-// Function declaration
+// Function declaration statement
 
 FnDeclaration::FnDeclaration(Stmt identifier, std::vector<Stmt> arguments, std::vector<Stmt> argument_def, Stmt returns, Stmt return_def, Stmt body, int def_args, int line)
    : identifier(std::move(identifier)), arguments(std::move(arguments)), argument_def(std::move(argument_def)), returns(std::move(returns)), return_def(std::move(return_def)), body(std::move(body)), def_args(def_args), Statement(StmtType::fn_decl, line) {}
@@ -59,7 +63,7 @@ Stmt DeleteStmt::copy() const {
    return DeleteStmt::make(std::move(copied_identifiers), line);
 }
 
-// If else statement
+// If-else statement
 
 IfElseStmt::IfElseStmt(Stmt ifclause, std::vector<Stmt> elifclauses, std::optional<Stmt> elseclause, int line)
    : ifclause(std::move(ifclause)), elifclauses(std::move(elifclauses)), elseclause(std::move(elseclause)), Statement(StmtType::ifelse, line) {}
@@ -145,6 +149,8 @@ Stmt UnlessStmt::copy() const {
    return UnlessStmt::make(expr->copy(), stmt->copy(), line);
 }
 
+// Expressions
+
 // Assignment expression
 
 AssignmentExpr::AssignmentExpr(Type op, Stmt left, Stmt right, int line)
@@ -224,6 +230,8 @@ Stmt ArgsListExpr::copy() const {
    }
    return ArgsListExpr::make(std::move(copied_args), line);
 }
+
+// Literals
 
 // Identifier literal
 

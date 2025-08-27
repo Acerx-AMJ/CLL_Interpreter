@@ -1,10 +1,16 @@
 #include "error.hpp"
 
+// Includes
+
 #include <iostream>
 #include <sstream>
 
+// Static variables
+
 static std::string temp = "";
 static std::string& program_code = temp;
+
+// Errors
 
 namespace err {
    void set_program_code(std::string& code) {

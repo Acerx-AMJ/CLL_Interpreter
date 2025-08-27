@@ -1,7 +1,11 @@
 #include "properties.hpp"
 
+// Includes
+
 #include "environment.hpp"
 #include "fmt.hpp"
+
+// Properties
 
 namespace prop {
    // Property map

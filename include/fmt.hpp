@@ -1,16 +1,20 @@
 #ifndef FMT_HPP
 #define FMT_HPP
 
+// Includes
+
 #include "error.hpp"
 #include <iostream>
 #include <sstream>
-#include <string>
 #include <vector>
+
+// Format
 
 namespace fmt {
    using namespace std::string_literals;
    
-   // Convert any type to string
+   // To string functions
+
    template<typename T>
    std::string to_string(const T& value) {
       std::stringstream s;
@@ -23,7 +27,8 @@ namespace fmt {
       return (value ? "true"s : "false"s);
    }
 
-   // Format string
+   // Format functions
+
    template<typename... Args>
    std::string format(const char* base, const Args&... args) {
       std::string result = base;
@@ -50,6 +55,7 @@ namespace fmt {
    }
 
    // Print functions
+
    template<typename... Args>
    void printf(const char* base, const Args&... args) {
       std::cout << fmt::format(base, args...);
@@ -70,6 +76,8 @@ namespace fmt {
       ((std::cout << std::boolalpha << args << ' '), ...);
       std::cout << '\n';
    }
+
+   // Format print functions
 
    template<typename T>
    void printf_v(const char* base, const std::vector<T>& args = {}) {
@@ -97,6 +105,7 @@ namespace fmt {
    }
 
    // Raise functions
+
    template<typename... Args>
    [[noreturn]] void raise(int line, const char* error, const Args&... args) {
       err::raise(fmt::format(error, args...), line);
