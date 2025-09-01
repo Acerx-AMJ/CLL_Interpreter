@@ -24,6 +24,7 @@ class Interpreter {
    Value evaluate_if_else_stmt(Environment& env, Stmt stmt);
    Value evaluate_while_loop(Environment& env, Stmt stmt);
    Value evaluate_for_loop(Environment& env, Stmt stmt);
+   Value evaluate_foreach_loop(Environment& env, Stmt stmt);
    Value evaluate_unless_stmt(Environment& env, Stmt stmt);
 
    // Expression evaluation functions

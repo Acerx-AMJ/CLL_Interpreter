@@ -34,6 +34,8 @@ std::vector<Token>& Lexer::lex() {
             if (isdigit(ch)) {
                last_dash = false;
                number += ch;
+            } else if (ch == '.' && peek() == '.') {
+               break;
             } else if (ch == '.') {
                if (!dot) {
                   dot = true;

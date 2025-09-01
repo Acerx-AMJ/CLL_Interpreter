@@ -11,14 +11,14 @@
 // Statement types
 
 enum class StmtType : char {
-   var_decl, fn_decl, exists, del, ifelse, if_clause, while_loop, for_loop,
+   var_decl, fn_decl, exists, del, ifelse, if_clause, while_loop, for_loop, foreach_loop,
    break_stmt, continue_stmt, return_stmt, unless_stmt,
    assignment, ternary, binary, unary, property, call,
    identifier, number, character, string, array, null, program
 };
 
 constexpr std::string_view stmt_type_str[] {
-   "VariableDeclaration", "FunctionDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement",
+   "VariableDeclaration", "FunctionDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement", "ForEachLoopStatement",
    "BreakStatement", "ContinueStatement", "ReturnStatement", "UnlessStatement",
    "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression", "PropertyAccess", "CallExpression",
    "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "ArrayLiteral", "NullLiteral", "Program"
@@ -162,6 +162,21 @@ struct ForStmt : public Statement {
    ForStmt(std::optional<Stmt> initexpr, std::optional<Stmt> condition, std::optional<Stmt> loopexpr, Stmt stmt, int line);
    static Stmt make(std::optional<Stmt> initexpr, std::optional<Stmt> condition, std::optional<Stmt> loopexpr, Stmt stmt, int line) {
       return std::make_unique<ForStmt>(std::move(initexpr), std::move(condition), std::move(loopexpr), std::move(stmt), line);
+   }
+   Stmt copy() const override;
+};
+
+// For each loop statement
+
+struct ForEachStmt : public Statement {
+   Stmt expr;
+   Stmt stmt;
+   Stmt object;
+   std::optional<Stmt> index;
+
+   ForEachStmt(Stmt expr, Stmt stmt, Stmt object, std::optional<Stmt> index, int line);
+   static Stmt make(Stmt expr, Stmt stmt, Stmt object, std::optional<Stmt> index, int line) {
+      return std::make_unique<ForEachStmt>(std::move(expr), std::move(stmt), std::move(object), std::move(index), line);
    }
    Stmt copy() const override;
 };

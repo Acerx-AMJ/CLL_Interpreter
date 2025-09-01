@@ -85,6 +85,8 @@ Value Interpreter::evaluate_stmt(Environment& env, Stmt stmt) {
       return evaluate_while_loop(env, std::move(stmt));
    case StmtType::for_loop:
       return evaluate_for_loop(env, std::move(stmt));
+   case StmtType::foreach_loop:
+      return evaluate_foreach_loop(env, std::move(stmt));
    case StmtType::break_stmt:
       should_break = true;
       fmt::raise_if(stmt->line, loop_stack.empty(), "'BreakStatement' outside of a loop.");
@@ -256,6 +258,41 @@ Value Interpreter::evaluate_for_loop(Environment& env, Stmt stmt) {
    }
 }
 
+// Evaluate for each loop statement
+
+Value Interpreter::evaluate_foreach_loop(Environment& env, Stmt stmt) {
+   auto& for_stmt = get_stmt<ForEachStmt>(stmt);
+   Value result;
+   loop_stack.push(1);
+
+   fmt::raise_if(for_stmt.line, for_stmt.object->type != StmtType::identifier, "Expected 'foreach' loop object to be 'IdentifierValue', instead it is '{}'.", value_type_str[int(for_stmt.object->type)]);
+   fmt::raise_if(for_stmt.line, for_stmt.index.has_value() && for_stmt.index.value()->type != StmtType::identifier, "Expected 'foreach' loop index to be 'IdentifierValue', instead it is '{}'.", value_type_str[int(for_stmt.object->type)]);
+
+   auto iterater = evaluate_stmt(env, std::move(for_stmt.expr));
+   fmt::raise_if(for_stmt.line, !iterater->iteratable(), "Expected 'foreach' loop expression to be iteratable.");
+
+   for (int i = 0; i < iterater->size(); ++i) {
+      Environment new_env (&env);
+      new_env.declare_variable(get_stmt<IdentLiteral>(for_stmt.object).identifier, iterater->at(i), true, for_stmt.line);
+
+      if (for_stmt.index.has_value()) {
+         new_env.declare_variable(get_stmt<IdentLiteral>(for_stmt.index.value()).identifier, NumberValue::make(i, for_stmt.line), true, for_stmt.line);
+      }
+      result = evaluate(static_cast<Program&>(*for_stmt.stmt->copy().get()), new_env);
+
+      if (should_break) {
+         should_break = false;
+         loop_stack.pop();
+         return std::move(result);
+      }
+
+      if (should_continue) {
+         should_continue = false;
+      }
+   }
+   return std::move(result);
+}
+
 // Evaluate unless statement
 
 Value Interpreter::evaluate_unless_stmt(Environment& env, Stmt stmt) {
@@ -348,6 +385,20 @@ Value Interpreter::evaluate_binary_expr(Environment& env, Stmt expr) {
       return BoolValue::make(right->greater(left, "<"), binary.line);
    case Type::smaller_equal:
       return BoolValue::make(!left->greater(right, "<="), binary.line);
+   case Type::dot_dot: {
+      auto array = std::make_unique<Array>(std::vector<Value>{}, binary.line);
+      auto lnum = left->as_number(), rnum = right->as_number();
+
+      bool bigger = (lnum > rnum);
+      if (bigger) {
+         --lnum;
+      }
+
+      for (int i = lnum; (bigger ? i >= rnum : i < rnum); (bigger ? i-- : i++)) {
+         array->array.push_back(NumberValue::make(i, binary.line));
+      }
+      return std::move(array);
+   }
    default:
       fmt::raise(binary.line, "Unsupported binary command '{}'.", type_str[int(binary.op)]);
    }

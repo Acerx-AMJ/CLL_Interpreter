@@ -244,6 +244,19 @@ Stmt Parser::parse_for_loop() {
    
    if (!is(Type::semicolon)) {
       initexpr = std::optional(parse_expr());
+      std::optional<Stmt> index = std::nullopt;
+
+      if (is(Type::comma)) {
+         advance();
+         index = std::optional(parse_primary_expr());
+      }
+
+      if (is(Type::keyword) && current().lexeme == "in"s) {
+         advance();
+         auto expr = parse_expr();
+         auto stmt = parse_block();
+         return parse_unless_stmt(ForEachStmt::make(std::move(expr), std::move(stmt), std::move(initexpr.value()), std::move(index), line()));
+      }
    }
    fmt::raise_if(line(), !is(Type::semicolon), "Expected semicolon after initial for loop expression, got '{}' instead.", type_str[int(current().type)]);
    advance();
@@ -324,13 +337,28 @@ Stmt Parser::parse_ternary_expr() {
 // Parse value or expression
 
 Stmt Parser::parse_value_or_expr() {
-   auto left = parse_assignment_expr();
+   auto left = parse_range_expr();
 
    while (is(Type::binary_cond)) {
       Type op = current().type;
       advance();
 
       auto right = parse_value_or_expr();
+      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
+   }
+   return std::move(left);
+}
+
+// Parse range expression
+
+Stmt Parser::parse_range_expr() {
+   auto left = parse_assignment_expr();
+
+   while (is(Type::dot_dot)) {
+      Type op = current().type;
+      advance();
+
+      auto right = parse_assignment_expr();
       left = BinaryExpr::make(op, std::move(left), std::move(right), line());
    }
    return std::move(left);

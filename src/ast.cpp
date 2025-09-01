@@ -113,6 +113,15 @@ Stmt ForStmt::copy() const {
    );
 }
 
+// For each loop statement
+
+ForEachStmt::ForEachStmt(Stmt expr, Stmt stmt, Stmt object, std::optional<Stmt> index, int line)
+   : expr(std::move(expr)), stmt(std::move(stmt)), object(std::move(object)), index(std::move(index)), Statement(StmtType::foreach_loop, line) {}
+
+Stmt ForEachStmt::copy() const {
+   return ForEachStmt::make(expr->copy(), stmt->copy(), object->copy(), (index.has_value() ? std::optional(index.value()->copy()) : std::nullopt), line);
+}
+
 // Break statement
 
 BreakStmt::BreakStmt(int line)

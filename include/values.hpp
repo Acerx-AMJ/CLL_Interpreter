@@ -61,6 +61,15 @@ struct ValueLiteral {
    bool equal(Value& other) const;
    bool really_equal(Value& other) const;
    bool greater(Value& other, const std::string& op) const;
+
+   // Iteration functions
+
+   virtual bool iteratable() const {
+      return false;
+   }
+
+   virtual Value at(size_t index) const { std::exit(0); }
+   virtual size_t size() const { return 0; }
 };
 
 // Identifier value
@@ -129,6 +138,18 @@ struct StringValue : public ValueLiteral {
    char as_char() const override;
    bool as_bool() const override;
    Value copy() const override;
+
+   bool iteratable() const override {
+      return true;
+   }
+
+   Value at(size_t index) const override {
+      return CharValue::make(string.at(index), line);
+   }
+
+   size_t size() const override {
+      return string.size();
+   }
 };
 
 // Boolean value
@@ -163,6 +184,18 @@ struct Array : public ValueLiteral {
    char as_char() const override;
    bool as_bool() const override;
    Value copy() const override;
+
+   bool iteratable() const override {
+      return true;
+   }
+
+   Value at(size_t index) const override {
+      return array.at(index)->copy();
+   }
+
+   size_t size() const override {
+      return array.size();
+   }
 };
 
 // Native (built-in) function value
