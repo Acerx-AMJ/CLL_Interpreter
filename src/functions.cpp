@@ -149,4 +149,54 @@ namespace fun {
       fmt::raise_if(line, args.size() > 1, "'bool': Expected no arguments or a single argument.");
       return BoolValue::make((args.empty() ? false : args.at(0)->as_bool()), line);
    }
+
+   // Range functions
+
+   Value range(std::vector<Value>& args, Environment* env, int line) {
+      fmt::raise_if(line, args.size() < 2, "'range': Expected 2 arguments.");
+      auto array = std::make_unique<Array>(std::vector<Value>{}, line);
+      auto left = args.at(0)->as_number(), right = args.at(1)->as_number();
+
+      bool bigger = (left > right);
+      for (int i = left; (bigger ? i >= right : i <= right); (bigger ? --i : ++i)) {
+         array->array.push_back(NumberValue::make(i, line));
+      }
+      return std::move(array);
+   }
+
+   Value rangex(std::vector<Value>& args, Environment* env, int line) {
+      fmt::raise_if(line, args.size() < 2, "'rangex': Expected 2 arguments.");
+      auto array = std::make_unique<Array>(std::vector<Value>{}, line);
+      auto left = args.at(0)->as_number(), right = args.at(1)->as_number();
+
+      bool bigger = (left > right);
+      for (int i = left + 1; (bigger ? i > right : i < right); (bigger ? --i : ++i)) {
+         array->array.push_back(NumberValue::make(i, line));
+      }
+      return std::move(array);
+   }
+
+   Value rangexe(std::vector<Value>& args, Environment* env, int line) {
+      fmt::raise_if(line, args.size() < 2, "'rangex': Expected 2 arguments.");
+      auto array = std::make_unique<Array>(std::vector<Value>{}, line);
+      auto left = args.at(0)->as_number(), right = args.at(1)->as_number();
+
+      bool bigger = (left > right);
+      for (int i = left; (bigger ? i > right : i < right); (bigger ? --i : ++i)) {
+         array->array.push_back(NumberValue::make(i, line));
+      }
+      return std::move(array);
+   }
+
+   Value rangexs(std::vector<Value>& args, Environment* env, int line) {
+      fmt::raise_if(line, args.size() < 2, "'rangex': Expected 2 arguments.");
+      auto array = std::make_unique<Array>(std::vector<Value>{}, line);
+      auto left = args.at(0)->as_number(), right = args.at(1)->as_number();
+
+      bool bigger = (left > right);
+      for (int i = left + 1; (bigger ? i >= right : i <= right); (bigger ? --i : ++i)) {
+         array->array.push_back(NumberValue::make(i, line));
+      }
+      return std::move(array);
+   }
 }

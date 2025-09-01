@@ -36,6 +36,11 @@ Environment::Environment()
    declare_variable("number"s, NativeFn::make(fun::number, "number"s, err::nline), true, err::nline);
    declare_variable("char"s, NativeFn::make(fun::char_, "char"s, err::nline), true, err::nline);
    declare_variable("bool"s, NativeFn::make(fun::bool_, "bool"s, err::nline), true, err::nline);
+
+   declare_variable("range"s, NativeFn::make(fun::range, "range"s, err::nline), true, err::nline);
+   declare_variable("rangex"s, NativeFn::make(fun::rangex, "rangex"s, err::nline), true, err::nline);
+   declare_variable("rangexe"s, NativeFn::make(fun::rangexe, "rangexe"s, err::nline), true, err::nline);
+   declare_variable("rangexs"s, NativeFn::make(fun::rangexs, "rangexs"s, err::nline), true, err::nline);
 }
 
 // Edit functions

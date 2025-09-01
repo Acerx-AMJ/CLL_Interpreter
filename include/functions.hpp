@@ -36,6 +36,13 @@ namespace fun {
    Value number(std::vector<Value>& args, Environment* env, int line);
    Value char_(std::vector<Value>& args, Environment* env, int line);
    Value bool_(std::vector<Value>& args, Environment* env, int line);
+
+   // Range functions
+
+   Value range(std::vector<Value>& args, Environment* env, int line);
+   Value rangex(std::vector<Value>& args, Environment* env, int line);
+   Value rangexe(std::vector<Value>& args, Environment* env, int line);
+   Value rangexs(std::vector<Value>& args, Environment* env, int line);
 }
 
 #endif

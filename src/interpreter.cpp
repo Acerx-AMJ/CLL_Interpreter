@@ -390,11 +390,7 @@ Value Interpreter::evaluate_binary_expr(Environment& env, Stmt expr) {
       auto lnum = left->as_number(), rnum = right->as_number();
 
       bool bigger = (lnum > rnum);
-      if (bigger) {
-         --lnum;
-      }
-
-      for (int i = lnum; (bigger ? i >= rnum : i < rnum); (bigger ? i-- : i++)) {
+      for (int i = lnum; (bigger ? i >= rnum : i <= rnum); (bigger ? --i : ++i)) {
          array->array.push_back(NumberValue::make(i, binary.line));
       }
       return std::move(array);
