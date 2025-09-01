@@ -248,6 +248,39 @@ bool ValueLiteral::equal(Value& other) const {
    }
 }
 
+// Binary type and value equality operator
+
+bool ValueLiteral::really_equal(Value& other) const {
+   auto t1 = type, t2 = other->type;
+   if (t1 != t2) {
+      return false;
+   }
+
+   if (t1 == ValueType::null) {
+      return true;
+   } else if (t1 == ValueType::boolean) {
+      return as_bool() == other->as_bool();
+   } else if (t1 == ValueType::array) {
+      const auto& array1 = static_cast<const Array&>(*this);
+      auto& array2 = get_value<Array>(other);
+
+      if (array1.array.size() != array2.array.size()) {
+         return false;
+      }
+
+      for (int i = 0; i < array1.array.size(); ++i) {
+         if (!array1.array.at(i)->really_equal(array2.array.at(i))) {
+            return false;
+         }
+      }
+      return true;
+   } else if (t1 != ValueType::string && t1 != ValueType::identifier) {
+      return as_number() == other->as_number();
+   } else {
+      return as_string() == other->as_string();
+   }
+}
+
 // Binary greater-than operator
 
 bool ValueLiteral::greater(Value& other, const std::string& op) const {

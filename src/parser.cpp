@@ -505,63 +505,38 @@ Stmt Parser::parse_property_access() {
 // Parse call expression
 
 Stmt Parser::parse_call_expr() {
-   auto identifier = parse_member_access();
+   auto identifier = parse_primary_expr();
    if (identifier->type != StmtType::identifier) {
       return std::move(identifier);
    }
 
    while (is(Type::l_paren)) {
-      auto args = parse_args_list();
-      fmt::raise_if(line(), args->type != StmtType::args, "Expected arguments list after identifier, got '{}' instead.", stmt_type_str[int(args->type)]);
-      identifier = CallExpr::make(std::move(args), std::move(identifier), line());
-   }
-   return std::move(identifier);
-}
-
-// Parse argument list expression
-
-Stmt Parser::parse_args_list() {
-   if (!is(Type::l_paren)) {
-      return parse_member_access();
-   }
-   advance();
-   std::vector<Stmt> args;
-
-   if (is(Type::r_paren)) {
       advance();
-      return ArgsListExpr::make(std::move(args), line());
-   }
+      std::vector<Stmt> args;
 
-   auto arg = parse_expr();
-   while (is(Type::comma)) {
-      advance();
       if (is(Type::r_paren)) {
-         break;
+         advance();
+         identifier = CallExpr::make(std::move(args), std::move(identifier), line());
+         continue;
+      }
+
+      auto arg = parse_expr();
+      while (is(Type::comma)) {
+         advance();
+         if (is(Type::r_paren)) {
+            break;
+         }
+
+         args.push_back(std::move(arg));
+         arg = parse_expr();
       }
 
       args.push_back(std::move(arg));
-      arg = parse_expr();
-   }
-
-   args.push_back(std::move(arg));
-   fmt::raise_if(line(), !is(Type::r_paren), "Expected matching parentheses after argument list, got '{}' instead.", type_str[int(current().type)]);
-   advance();
-   return ArgsListExpr::make(std::move(args), line());
-}
-
-// Parse member access expression
-
-Stmt Parser::parse_member_access() {
-   auto left = parse_primary_expr();
-
-   while (is(Type::l_bracket)) {
+      fmt::raise_if(line(), !is(Type::r_paren), "Expected matching parentheses after call argument list, got '{}' instead.", type_str[int(current().type)]);
       advance();
-      auto key = parse_expr();
-      fmt::raise_if(line(), !is(Type::r_bracket), "Expected ']' after key.");
-      advance();
-      left = MemberAccess::make(std::move(left), std::move(key), line());
+      identifier = CallExpr::make(std::move(args), std::move(identifier), line());
    }
-   return std::move(left);
+   return std::move(identifier);
 }
 
 // Parse primary expression (literal)

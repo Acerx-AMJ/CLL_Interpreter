@@ -13,16 +13,14 @@
 enum class StmtType : char {
    var_decl, fn_decl, exists, del, ifelse, if_clause, while_loop, for_loop,
    break_stmt, continue_stmt, return_stmt, unless_stmt,
-   assignment, ternary, binary, unary, member, property,
-   call, args,
+   assignment, ternary, binary, unary, property, call,
    identifier, number, character, string, array, null, program
 };
 
 constexpr std::string_view stmt_type_str[] {
    "VariableDeclaration", "FunctionDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement",
    "BreakStatement", "ContinueStatement", "ReturnStatement", "UnlessStatement",
-   "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression", "MemberAccess", "PropertyAccess",
-   "CallExpression", "ArgumentListExpression",
+   "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression", "PropertyAccess", "CallExpression",
    "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "ArrayLiteral", "NullLiteral", "Program"
 };
 
@@ -266,19 +264,6 @@ struct UnaryExpr : public Statement {
    Stmt copy() const override;
 };
 
-// Member access expression
-
-struct MemberAccess : public Statement {
-   Stmt left;
-   Stmt key;
-
-   MemberAccess(Stmt left, Stmt key, int line);
-   static Stmt make(Stmt left, Stmt key, int line) {
-      return std::make_unique<MemberAccess>(std::move(left), std::move(key), line);
-   }
-   Stmt copy() const override;
-};
-
 // Property access expression
 
 struct PropertyAccess : public Statement {
@@ -295,25 +280,12 @@ struct PropertyAccess : public Statement {
 // Call expression
 
 struct CallExpr : public Statement {
-   Stmt args;
+   std::vector<Stmt> args;
    Stmt identifier;
 
-   CallExpr(Stmt args, Stmt identifier, int line);
-   static Stmt make(Stmt args, Stmt identifier, int line) {
+   CallExpr(std::vector<Stmt> args, Stmt identifier, int line);
+   static Stmt make(std::vector<Stmt> args, Stmt identifier, int line) {
       return std::make_unique<CallExpr>(std::move(args), std::move(identifier), line);
-   }
-
-   Stmt copy() const override;
-};
-
-// Argument list expression
-
-struct ArgsListExpr : public Statement {
-   std::vector<Stmt> args;
-
-   ArgsListExpr(std::vector<Stmt> args, int line);
-   static Stmt make(std::vector<Stmt> args, int line) {
-      return std::make_unique<ArgsListExpr>(std::move(args), line);
    }
 
    Stmt copy() const override;

@@ -15,11 +15,11 @@ VarDeclaration::VarDeclaration(bool constant, std::vector<Stmt> identifiers, std
 Stmt VarDeclaration::copy() const {
    std::vector<Stmt> copied_identifiers, copied_values;
    for (const auto& identifier : identifiers) {
-      copied_identifiers.push_back(std::move(identifier->copy()));
+      copied_identifiers.push_back(identifier->copy());
    }
    
    for (const auto& value : values) {
-      copied_values.push_back(std::move(value->copy()));
+      copied_values.push_back(value->copy());
    }
    return VarDeclaration::make(constant, std::move(copied_identifiers), std::move(copied_values), line);
 }
@@ -58,7 +58,7 @@ DeleteStmt::DeleteStmt(std::vector<Stmt> identifiers, int line)
 Stmt DeleteStmt::copy() const {
    std::vector<Stmt> copied_identifiers;
    for (const auto& identifier : identifiers) {
-      copied_identifiers.push_back(std::move(identifier->copy()));
+      copied_identifiers.push_back(identifier->copy());
    }
    return DeleteStmt::make(std::move(copied_identifiers), line);
 }
@@ -157,7 +157,7 @@ AssignmentExpr::AssignmentExpr(Type op, Stmt left, Stmt right, int line)
    : op(op), left(std::move(left)), right(std::move(right)), Statement(StmtType::assignment, line) {}
 
 Stmt AssignmentExpr::copy() const {
-   return AssignmentExpr::make(op, std::move(left->copy()), std::move(right->copy()), line);
+   return AssignmentExpr::make(op, left->copy(), right->copy(), line);
 }
 
 // Ternary expression
@@ -166,7 +166,7 @@ TernaryExpr::TernaryExpr(Stmt left, Stmt middle, Stmt right, int line)
    : left(std::move(left)), middle(std::move(middle)), right(std::move(right)), Statement(StmtType::ternary, line) {}
 
 Stmt TernaryExpr::copy() const {
-   return TernaryExpr::make(std::move(left->copy()), std::move(middle->copy()), std::move(right->copy()), line);
+   return TernaryExpr::make(left->copy(), middle->copy(), right->copy(), line);
 }
 
 // Binary expression
@@ -175,7 +175,7 @@ BinaryExpr::BinaryExpr(Type op, Stmt left, Stmt right, int line)
    : op(op), left(std::move(left)), right(std::move(right)), Statement(StmtType::binary, line) {}
 
 Stmt BinaryExpr::copy() const {
-   return BinaryExpr::make(op, std::move(left->copy()), std::move(right->copy()), line);
+   return BinaryExpr::make(op, left->copy(), right->copy(), line);
 }
 
 // Unary expression
@@ -184,16 +184,7 @@ UnaryExpr::UnaryExpr(Type op, Stmt value, int line)
    : op(op), value(std::move(value)), Statement(StmtType::unary, line) {}
 
 Stmt UnaryExpr::copy() const {
-   return UnaryExpr::make(op, std::move(value->copy()), line);
-}
-
-// Member access expression
-
-MemberAccess::MemberAccess(Stmt left, Stmt key, int line) 
-   : left(std::move(left)), key(std::move(key)), Statement(StmtType::member, line) {}
-
-Stmt MemberAccess::copy() const {
-   return MemberAccess::make(left->copy(), key->copy(), line);
+   return UnaryExpr::make(op, value->copy(), line);
 }
 
 // Property access expression
@@ -211,24 +202,15 @@ Stmt PropertyAccess::copy() const {
 
 // Call expression
 
-CallExpr::CallExpr(Stmt args, Stmt identifier, int line)
+CallExpr::CallExpr(std::vector<Stmt> args, Stmt identifier, int line)
    : args(std::move(args)), identifier(std::move(identifier)), Statement(StmtType::call, line) {}
 
 Stmt CallExpr::copy() const {
-   return CallExpr::make(std::move(args->copy()), std::move(identifier->copy()), line);
-}
-
-// Argument list expression
-
-ArgsListExpr::ArgsListExpr(std::vector<Stmt> args, int line)
-   : args(std::move(args)), Statement(StmtType::args, line) {}
-
-Stmt ArgsListExpr::copy() const {
    std::vector<Stmt> copied_args;
    for (const auto& arg : args) {
-      copied_args.push_back(std::move(arg->copy()));
+      copied_args.push_back(arg->copy());
    }
-   return ArgsListExpr::make(std::move(copied_args), line);
+   return CallExpr::make(std::move(copied_args), identifier->copy(), line);
 }
 
 // Literals

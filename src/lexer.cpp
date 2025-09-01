@@ -28,23 +28,10 @@ std::vector<Token>& Lexer::lex() {
          fmt::raise_if(original_line, index >= code.size(), "Unterminated block comment.");
       } else if (isdigit(ch)) {
          std::string number;
-         bool dot = false, last_dash = false, prefix = false, scientific = false;
-         bool bin = false, hex = false, oct = false;
-
-         if (ch == '0' && index + 1 < code.size()) {
-            ch = advance();
-            bin = (ch == 'b' || ch == 'B');
-            hex = (ch == 'x' || ch == 'X');
-            oct = (ch == 'o' || ch == 'O');
-            prefix = bin || hex || oct;
-
-            if (prefix) {
-               ch = advance();
-            }
-         }
+         bool dot = false, last_dash = false, scientific = false;
 
          for (; index < code.size(); ch = advance()) {
-            if (isdigit(ch) || (hex && ((tolower(ch) <= 'f' && tolower(ch) >= 'a')))) {
+            if (isdigit(ch)) {
                last_dash = false;
                number += ch;
             } else if (ch == '.') {
@@ -54,7 +41,6 @@ std::vector<Token>& Lexer::lex() {
                } else break;
             } else if (ch == 'e' || ch == 'E') {
                fmt::raise_if(line, scientific, "Expected scientific number '{}' to only contain one 'e'.", number);
-               fmt::raise_if(line, prefix, "Expected prefixed number '{}' to not be scientific.", number);
                scientific = true;
                number += ch;
             } else if (scientific && (ch == '-' || ch == '+') && (code.at(index - 1) == 'e' || code.at(index - 1) == 'E')) {
@@ -67,13 +53,10 @@ std::vector<Token>& Lexer::lex() {
             }
          }
          fmt::raise_if(line, last_dash, "Expected number '{}' to not end with '_', 'e' or '.'.", number);
-         fmt::raise_if(line, number.empty() && prefix, "Expected number to not only contain the prefix.");
 
          try {
             if (scientific) {
                number = std::to_string(std::stod(number));
-            } else if (prefix) {
-               number = std::to_string(std::stoi(number, nullptr, (bin ? 2 : (oct ? 8 : 16))));
             }
          } catch (...) {
             fmt::raise(line, "Prefixed number '{}' out of range.", number);

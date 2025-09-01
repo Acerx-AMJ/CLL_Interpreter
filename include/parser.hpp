@@ -46,8 +46,6 @@ class Parser {
    Stmt parse_reverse_unary_expr();
    Stmt parse_property_access();
    Stmt parse_call_expr();
-   Stmt parse_args_list();
-   Stmt parse_member_access();
    Stmt parse_primary_expr();
 
    // Utility functions

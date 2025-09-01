@@ -76,12 +76,9 @@ Number type includes any number, both integral and floating:
 ```cxx
 let x, y, z = 29, 6.12, -2.29
 ```
-CLL supports scientific notation and binary, hexadecimal, and octal prefixes:
+CLL supports scientific notation:
 ```cxx
-let s1, s2 = 1.125e3, 188e-4
-let b1, b2 = 0b1011, 0b11111111
-let h1, h2 = 0XFFFF, 0x2f
-let o1, o2 = 0o17, 0O224
+let s1, s2 = 1.125e3, 188E-4
 ```
 #### Strings
 Strings can be defined with `"` quotes:

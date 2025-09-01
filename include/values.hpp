@@ -59,6 +59,7 @@ struct ValueLiteral {
    Value remainder(Value& other) const;
    Value exponentiate(Value& other) const;
    bool equal(Value& other) const;
+   bool really_equal(Value& other) const;
    bool greater(Value& other, const std::string& op) const;
 };
 

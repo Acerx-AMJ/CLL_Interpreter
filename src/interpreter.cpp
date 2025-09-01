@@ -34,7 +34,7 @@ Value Interpreter::call_function(Environment& env, Value func, std::vector<Value
       return native.call(args, &env, line);
    } else if (func->type == ValueType::fn) {
       auto& fn = get_value<Function>(func);
-      fmt::raise_if(line, args.size() > fn.parameters.size() || args.size() < fn.parameters.size() - fn.def_args, "Expected 'CallExpression' argument count to match function declaration parameter count. {} != {}.", args.size(), fn.parameters.size());
+      fmt::raise_if(line, args.size() > fn.parameters.size() || args.size() < fn.parameters.size() - fn.def_args, "Expected 'CallExpression' '{}' argument count to match function declaration parameter count. {} != {}.", fn.identifier, args.size(), fn.parameters.size());
       fn_stack.push(1);
 
       Environment new_env (fn.env);
@@ -272,8 +272,6 @@ Value Interpreter::evaluate_unless_stmt(Environment& env, Stmt stmt) {
 
 Value Interpreter::evaluate_expr(Environment& env, Stmt expr) {
    switch (expr->type) {
-   case StmtType::args:
-      fmt::raise(expr->line, "Unexpected argument list while evaluating.");
    case StmtType::assignment:
       return evaluate_assignment(env, std::move(expr));
    case StmtType::ternary:
@@ -282,8 +280,6 @@ Value Interpreter::evaluate_expr(Environment& env, Stmt expr) {
       return evaluate_binary_expr(env, std::move(expr));
    case StmtType::unary:
       return evaluate_unary_expr(env, std::move(expr));
-   case StmtType::member:
-      return evaluate_member_access(env, std::move(expr));
    case StmtType::property:
       return evaluate_property_access(env, std::move(expr));
    case StmtType::call:
@@ -339,11 +335,11 @@ Value Interpreter::evaluate_binary_expr(Environment& env, Stmt expr) {
    case Type::equals:
       return BoolValue::make(left->equal(right), binary.line);
    case Type::really_equals:
-      return BoolValue::make(left->type == right->type && left->equal(right), binary.line);
+      return BoolValue::make(left->really_equal(right), binary.line);
    case Type::not_equals:
       return BoolValue::make(!left->equal(right), binary.line);
    case Type::really_not_equals:
-      return BoolValue::make(left->type != right->type || !left->equal(right), binary.line);
+      return BoolValue::make(!left->really_equal(right), binary.line);
    case Type::greater:
       return BoolValue::make(left->greater(right, ">"), binary.line);
    case Type::greater_equal:
@@ -400,26 +396,6 @@ Value Interpreter::evaluate_unary_expr(Environment& env, Stmt expr) {
    }
 }
 
-// Evaluate member access expression
-
-Value Interpreter::evaluate_member_access(Environment& env, Stmt expr) {
-   auto& member = get_stmt<MemberAccess>(expr);
-   auto left = evaluate_stmt(env, std::move(member.left));
-   auto key = evaluate_stmt(env, std::move(member.key));
-
-   if (left->type == ValueType::array) {
-      auto& array = get_value<Array>(left);
-      fmt::raise_if(member.line, key->as_number() >= array.array.size(), "Index out of bounds. Array size is {}, while index is {}.", array.array.size(), key->as_number());
-      return array.array.at(key->as_number())->copy();
-   } else if (left->type == ValueType::string) {
-      auto& string = get_value<StringValue>(left);
-      fmt::raise_if(member.line, key->as_number() >= string.string.size(), "Index out of bounds. String size is {}, while index is {}.", string.string.size(), key->as_number());
-      return CharValue::make(string.string.at(key->as_number()), string.line);
-   } else {
-      fmt::raise(member.line, "Invalid member access: '{}'['{}'].", value_type_str[int(left->type)], value_type_str[int(key->type)]);
-   }
-}
-
 // Evaluate property access expression
 
 Value Interpreter::evaluate_property_access(Environment& env, Stmt expr) {
@@ -435,13 +411,11 @@ Value Interpreter::evaluate_property_access(Environment& env, Stmt expr) {
       auto value = prop::get(identifier, left->type);
       fmt::raise_if(prop.line, value->type != ValueType::native_fn, "Cannot call property '{}' as it is not a function, but '{}' instead.", identifier, value_type_str[int(left->type)]);
 
-      auto& args = get_stmt<ArgsListExpr>(call.args);
       std::vector<Value> arg_list;
-
       arg_list.push_back((original_left->type == StmtType::identifier ? IdentValue::make(get_stmt<IdentLiteral>(original_left).identifier, original_left->line) : NullValue::make(original_left->line)));
       arg_list.push_back(left->copy());
 
-      for (auto& arg : args.args) {
+      for (auto& arg : call.args) {
          arg_list.push_back(evaluate_stmt(env, std::move(arg)));
       }
 
@@ -452,7 +426,7 @@ Value Interpreter::evaluate_property_access(Environment& env, Stmt expr) {
          original_left = NullLiteral::make();
       }
    }
-   return left;
+   return std::move(left);
 }
 
 // Evaluate assignment expression
@@ -498,7 +472,7 @@ Value Interpreter::evaluate_assignment(Environment& env, Stmt expr) {
 Value Interpreter::evaluate_call_expr(Environment& env, Stmt expr) {
    auto& call = get_stmt<CallExpr>(expr);
    std::vector<Value> args;
-   for (auto& arg : get_stmt<ArgsListExpr>(call.args).args)
+   for (auto& arg : call.args)
       args.push_back(std::move(evaluate_stmt(env, std::move(arg))));
 
    if (call.identifier->type != StmtType::identifier) {
