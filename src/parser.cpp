@@ -23,7 +23,7 @@ Program& Parser::parse() {
 Stmt Parser::parse_stmt() {
    auto& token = current();
 
-   if (token.type == Type::keyword) {
+   if (is(Type::keyword)) {
       if (token.lexeme == "let"s || token.lexeme == "con"s) {
          return parse_var_decl();
       } else if (token.lexeme == "fn"s) {
@@ -46,11 +46,11 @@ Stmt Parser::parse_stmt() {
          return parse_unless_stmt(ContinueStmt::make(line()));
       } else if (token.lexeme == "return"s) {
          return parse_return_stmt();
-      } else if (token.lexeme == "do"s) {
-         return parse_unless_stmt(parse_block());
       } else {
          fmt::raise(token.line, "Unknown keyword '{}'.", token.lexeme);
       }
+   } else if (is(Type::thick_arrow)) {
+      return parse_unless_stmt(parse_block());
    }
    return parse_expr();
 }
@@ -100,10 +100,14 @@ Stmt Parser::parse_var_decl() {
 Stmt Parser::parse_fn_decl() {
    advance();
    auto original_line = line();
-   auto identifier = parse_primary_expr();
-   fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected identifier after 'fn' keyword, got '{}' instead.", stmt_type_str[int(identifier->type)]);
+   Stmt identifier = IdentLiteral::make("", line());
 
-   fmt::raise_if(line(), !is(Type::l_paren), "Expected '(' after 'fn {}', got '{}' instead.", get_stmt<IdentLiteral>(identifier).identifier, type_str[int(current().type)]);
+   if (!is(Type::l_paren)) {
+      identifier = parse_primary_expr();
+      fmt::raise_if(line(), identifier->type != StmtType::identifier, "Expected identifier after 'fn' keyword, got '{}' instead.", stmt_type_str[int(identifier->type)]);
+   }
+
+   fmt::raise_if(line(), !is(Type::l_paren), "Expected '(', got '{}' instead.", type_str[int(current().type)]);
    advance();
 
    std::vector<Stmt> arguments, argument_def;
@@ -221,7 +225,7 @@ Stmt Parser::parse_if_clause() {
 Stmt Parser::parse_while_loop() {
    advance();
 
-   if (is(Type::keyword) && current().lexeme == "do"s || is(Type::l_brace)) {
+   if (is(Type::thick_arrow) || is(Type::l_brace)) {
       auto stmt = parse_block();
       return WhileStmt::make(true, NullLiteral::make(line()), std::move(stmt), line());
    }
@@ -236,7 +240,7 @@ Stmt Parser::parse_while_loop() {
 Stmt Parser::parse_for_loop() {
    advance();
 
-   if (is(Type::keyword) && current().lexeme == "do"s || is(Type::l_brace)) {
+   if (is(Type::thick_arrow) || is(Type::l_brace)) {
       auto stmt = parse_block();
       return ForStmt::make(std::nullopt, std::nullopt, std::nullopt, std::move(stmt), line());
    }
@@ -267,7 +271,7 @@ Stmt Parser::parse_for_loop() {
    fmt::raise_if(line(), !is(Type::semicolon), "Expected semicolon after conditional for loop expression, got '{}' instead.", type_str[int(current().type)]);
    advance();
 
-   if ((!is(Type::keyword) || current().lexeme != "do"s) && !is(Type::l_brace)) {
+   if (!is(Type::thick_arrow) && !is(Type::l_brace)) {
       loopexpr = std::optional(parse_expr());
    }
 
@@ -278,7 +282,7 @@ Stmt Parser::parse_for_loop() {
 // Parse block (scope/do statement)
 
 Stmt Parser::parse_block() {
-   if (is(Type::keyword) && current().lexeme == "do"s) {
+   if (is(Type::thick_arrow)) {
       advance();
       auto program = std::make_unique<Program>(line());
       auto stmt = parse_expr();
@@ -337,28 +341,13 @@ Stmt Parser::parse_ternary_expr() {
 // Parse value or expression
 
 Stmt Parser::parse_value_or_expr() {
-   auto left = parse_range_expr();
+   auto left = parse_assignment_expr();
 
    while (is(Type::binary_cond)) {
       Type op = current().type;
       advance();
 
       auto right = parse_value_or_expr();
-      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
-   }
-   return std::move(left);
-}
-
-// Parse range expression
-
-Stmt Parser::parse_range_expr() {
-   auto left = parse_assignment_expr();
-
-   while (is(Type::dot_dot)) {
-      Type op = current().type;
-      advance();
-
-      auto right = parse_assignment_expr();
       left = BinaryExpr::make(op, std::move(left), std::move(right), line());
    }
    return std::move(left);
@@ -515,7 +504,7 @@ Stmt Parser::parse_reverse_unary_expr() {
 // Parse property access expression
 
 Stmt Parser::parse_property_access() {
-   auto left = parse_call_expr();
+   auto left = parse_range_expr();
    if (!is(Type::dot)) {
       return std::move(left);
    }
@@ -523,11 +512,26 @@ Stmt Parser::parse_property_access() {
    std::vector<Stmt> right;
    while (is(Type::dot)) {
       advance();
-      auto r = parse_call_expr();
+      auto r = parse_range_expr();
       fmt::raise_if(line(), r->type != StmtType::call, "Expected 'CallExpression' after property access.");
       right.push_back(std::move(r));
    }
    return PropertyAccess::make(std::move(left), std::move(right), line());
+}
+
+// Parse range expression
+
+Stmt Parser::parse_range_expr() {
+   auto left = parse_call_expr();
+
+   while (is(Type::dot_dot)) {
+      Type op = current().type;
+      advance();
+
+      auto right = parse_call_expr();
+      left = BinaryExpr::make(op, std::move(left), std::move(right), line());
+   }
+   return std::move(left);
 }
 
 // Parse call expression

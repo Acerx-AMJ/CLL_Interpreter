@@ -34,7 +34,6 @@ class Parser {
    Stmt parse_expr();
    Stmt parse_ternary_expr();
    Stmt parse_value_or_expr();
-   Stmt parse_range_expr();
    Stmt parse_assignment_expr();
    Stmt parse_logical_or_expr();
    Stmt parse_logical_and_expr();
@@ -46,6 +45,7 @@ class Parser {
    Stmt parse_unary_expr();
    Stmt parse_reverse_unary_expr();
    Stmt parse_property_access();
+   Stmt parse_range_expr();
    Stmt parse_call_expr();
    Stmt parse_primary_expr();
 

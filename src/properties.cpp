@@ -4,6 +4,7 @@
 
 #include "environment.hpp"
 #include "fmt.hpp"
+#include "interpreter.hpp"
 
 // Properties
 
@@ -55,6 +56,7 @@ namespace prop {
       create(array_v, "join"s, array_join, false);
       create(array_v, "reverse"s, array_reverse, false);
       create(array_v, "slice"s, array_slice, false);
+      create(array_v, "foreach"s, array_foreach, true);
 
       // String properties
 
@@ -81,6 +83,7 @@ namespace prop {
       create(string_v, "lower"s, string_lower, false);
       create(string_v, "swapcase"s, string_swapcase, false);
       create(string_v, "trim"s, string_trim, false);
+      create(string_v, "normalize"s, string_normalize, false);
       create(string_v, "pad_start"s, string_pad_start, false);
       create(string_v, "pad_end"s, string_pad_end, false);
       create(string_v, "repeat"s, string_repeat, false);
@@ -89,6 +92,7 @@ namespace prop {
       create(string_v, "split"s, string_split, false);
       create(string_v, "starts_with"s, string_starts_with, false);
       create(string_v, "ends_with"s, string_ends_with, false);
+      create(string_v, "foreach"s, string_foreach, true);
    }
 
    bool exists(const std::string& name, ValueType type) {
@@ -206,7 +210,7 @@ namespace prop {
       fmt::raise_if(line, start < 0 || start > array.array.size(), "'Array.find': Expected second argument to be in range 0-{} including, instead it is {}.", array.array.size(), start);
 
       for (int i = start; i < array.array.size(); ++i) {
-         if (target->really_equal(array.array.at(i))) {
+         if (target->equal(array.array.at(i))) {
             return NumberValue::make(i, line);
          }
       }
@@ -223,7 +227,7 @@ namespace prop {
       fmt::raise_if(line, start < 0 || start > array.array.size(), "'Array.find_all': Expected second argument to be in range 0-{} including, instead it is {}.", array.array.size(), start);
 
       for (int i = start; i < array.array.size(); ++i) {
-         if (target->really_equal(array.array.at(i))) {
+         if (target->equal(array.array.at(i))) {
             index_array->array.push_back(NumberValue::make(i, line));
          }
       }
@@ -239,7 +243,7 @@ namespace prop {
       fmt::raise_if(line, start < 0 || start > array.array.size(), "'Array.contains': Expected second argument to be in range 0-{} including, instead it is {}.", array.array.size(), start);
 
       for (int i = start; i < array.array.size(); ++i) {
-         if (target->really_equal(array.array.at(i))) {
+         if (target->equal(array.array.at(i))) {
             return BoolValue::make(true, line);
          }
       }
@@ -256,7 +260,7 @@ namespace prop {
       fmt::raise_if(line, start < 0 || start > array.array.size(), "'Array.count': Expected second argument to be in range 0-{} including, instead it is {}.", array.array.size(), start);
 
       for (int i = start; i < array.array.size(); ++i) {
-         count += (target->really_equal(array.array.at(i)));
+         count += (target->equal(array.array.at(i)));
       }
       return NumberValue::make(count, line);
    }
@@ -348,6 +352,25 @@ namespace prop {
          new_array->array.push_back(array.array.at(i)->copy());
       }
       return std::move(new_array);
+   }
+
+   Value array_foreach(std::vector<Value>& args, Environment* env, int line) {
+      fmt::raise_if(line, args.size() != 3, "'Array.foreach': Expected 1 argument.");
+      auto& array = get_value<Array>(args.at(1));
+
+      fmt::raise_if(line, args.at(2)->type != ValueType::fn && args.at(2)->type != ValueType::native_fn, "'Array.foreach': Expected first argument to be callable, instead it is {}.", value_type_str[int(args.at(2)->type)]);
+      Interpreter interpreter;
+
+      for (int i = 0; i < array.size(); ++i) {
+         std::vector<Value> arguments;
+         arguments.push_back(array.array.at(i)->copy());
+         
+         auto result = interpreter.call_function(*env, args.at(2)->copy(), arguments, line);
+         array.array.at(i) = std::move(result);
+      }
+      
+      save(args, array.copy(), env, line);
+      return array.copy();
    }
 
    // String functions
@@ -631,6 +654,31 @@ namespace prop {
       return std::move(new_string);
    }
 
+   Value string_normalize(std::vector<Value>& args, Environment* env, int line) {
+      fmt::raise_if(line, args.size() != 2, "'String.normalize': Expected no arguments.");
+      auto& string = get_value<StringValue>(args.at(1));
+      auto new_string = std::make_unique<StringValue>("", line);
+      bool last_space = true;
+
+      for (const auto& ch : string.string) {
+         bool is_space = isspace(ch);
+
+         if (last_space && is_space) {
+            continue;
+         } else if (last_space && !is_space) {
+            last_space = false;
+         } else if (is_space) {
+            last_space = true;
+         }
+         new_string->string.push_back(ch);
+      }
+
+      if (!new_string->string.empty() && isspace(new_string->string.back())) {
+         new_string->string.pop_back();
+      }
+      return std::move(new_string);
+   }
+
    Value string_pad_start(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() != 3 && args.size() != 4, "'String.pad_start': Expected 1 or 2 arguments.");
       auto& string = get_value<StringValue>(args.at(1));
@@ -738,6 +786,25 @@ namespace prop {
       auto& string = get_value<StringValue>(args.at(1));
       auto suffix = args.at(2)->as_string();
       return BoolValue::make(string.string.rfind(suffix) == string.string.size() - suffix.size(), line);
+   }
+
+   Value string_foreach(std::vector<Value>& args, Environment* env, int line) {
+      fmt::raise_if(line, args.size() != 3, "'String.foreach': Expected 1 argument.");
+      auto& string = get_value<StringValue>(args.at(1));
+
+      fmt::raise_if(line, args.at(2)->type != ValueType::fn && args.at(2)->type != ValueType::native_fn, "'String.foreach': Expected first argument to be callable, instead it is '{}'.", value_type_str[int(args.at(2)->type)]);
+      Interpreter interpreter;
+
+      for (int i = 0; i < string.size(); ++i) {
+         std::vector<Value> arguments;
+         arguments.push_back(CharValue::make(string.string.at(i), line));
+
+         auto result = interpreter.call_function(*env, args.at(2)->copy(), arguments, line);
+         string.string.at(i) = result->as_char();
+      }
+
+      save(args, string.copy(), env, line);
+      return string.copy();
    }
 
    // Helper functions

@@ -15,7 +15,7 @@ Value Interpreter::evaluate(Program& program, Environment& env) {
       last = evaluate_stmt(env, std::move(ast));
 
       if (!return_stack.empty() && return_stack.top() >= id) {
-         while (!return_stack.empty()) {
+         while (!return_stack.empty() && return_stack.top() != id) {
             return_stack.pop();
          }
          return std::move(last);
@@ -151,8 +151,10 @@ Value Interpreter::evaluate_fn_decl(Environment& env, Stmt stmt) {
 
    auto func = Function::make(identifier.identifier, std::move(parameters), std::move(parameter_def), returns, std::move(return_def), &env, std::move(decl.body), decl.def_args, decl.line);
 
-   env.declare_variable(identifier.identifier, std::move(func), true, decl.line);
-   return NullValue::make(decl.line);
+   if (!identifier.identifier.empty()) {
+      env.declare_variable(identifier.identifier, func->copy(), true, decl.line);
+   }
+   return std::move(func);
 }
 
 // Evaluate delete statement

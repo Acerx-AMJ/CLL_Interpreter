@@ -37,6 +37,7 @@ namespace prop {
    Value array_join         (std::vector<Value>& args, Environment* env, int line);
    Value array_reverse      (std::vector<Value>& args, Environment* env, int line);
    Value array_slice        (std::vector<Value>& args, Environment* env, int line);
+   Value array_foreach      (std::vector<Value>& args, Environment* env, int line);
 
    // String functions
 
@@ -63,6 +64,7 @@ namespace prop {
    Value string_lower       (std::vector<Value>& args, Environment* env, int line);
    Value string_swapcase    (std::vector<Value>& args, Environment* env, int line);
    Value string_trim        (std::vector<Value>& args, Environment* env, int line);
+   Value string_normalize   (std::vector<Value>& args, Environment* env, int line);
    Value string_pad_start   (std::vector<Value>& args, Environment* env, int line);
    Value string_pad_end     (std::vector<Value>& args, Environment* env, int line);
    Value string_repeat      (std::vector<Value>& args, Environment* env, int line);
@@ -71,6 +73,7 @@ namespace prop {
    Value string_split       (std::vector<Value>& args, Environment* env, int line);
    Value string_starts_with (std::vector<Value>& args, Environment* env, int line);
    Value string_ends_with   (std::vector<Value>& args, Environment* env, int line);
+   Value string_foreach     (std::vector<Value>& args, Environment* env, int line);
 
    // Helper functions
 
