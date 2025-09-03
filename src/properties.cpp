@@ -357,15 +357,17 @@ namespace prop {
    Value array_foreach(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() != 3, "'Array.foreach': Expected 1 argument.");
       auto& array = get_value<Array>(args.at(1));
+      auto& fn = args.at(2);
 
-      fmt::raise_if(line, args.at(2)->type != ValueType::fn && args.at(2)->type != ValueType::native_fn, "'Array.foreach': Expected first argument to be callable, instead it is {}.", value_type_str[int(args.at(2)->type)]);
+      fmt::raise_if(line, fn->type != ValueType::fn && fn->type != ValueType::native_fn, "'Array.foreach': Expected first argument to be callable, instead it is {}.", value_type_str[int(fn->type)]);
       Interpreter interpreter;
 
       for (int i = 0; i < array.size(); ++i) {
          std::vector<Value> arguments;
          arguments.push_back(array.array.at(i)->copy());
+         arguments.push_back(NumberValue::make(i, line));
          
-         auto result = interpreter.call_function(*env, args.at(2)->copy(), arguments, line);
+         auto result = interpreter.call_function(*env, fn->copy(), arguments, line);
          array.array.at(i) = std::move(result);
       }
       
@@ -791,15 +793,17 @@ namespace prop {
    Value string_foreach(std::vector<Value>& args, Environment* env, int line) {
       fmt::raise_if(line, args.size() != 3, "'String.foreach': Expected 1 argument.");
       auto& string = get_value<StringValue>(args.at(1));
+      auto& fn = args.at(2);
 
-      fmt::raise_if(line, args.at(2)->type != ValueType::fn && args.at(2)->type != ValueType::native_fn, "'String.foreach': Expected first argument to be callable, instead it is '{}'.", value_type_str[int(args.at(2)->type)]);
+      fmt::raise_if(line, fn->type != ValueType::fn && fn->type != ValueType::native_fn, "'String.foreach': Expected first argument to be callable, instead it is '{}'.", value_type_str[int(fn->type)]);
       Interpreter interpreter;
 
       for (int i = 0; i < string.size(); ++i) {
          std::vector<Value> arguments;
          arguments.push_back(CharValue::make(string.string.at(i), line));
+         arguments.push_back(NumberValue::make(i, line));
 
-         auto result = interpreter.call_function(*env, args.at(2)->copy(), arguments, line);
+         auto result = interpreter.call_function(*env, fn->copy(), arguments, line);
          string.string.at(i) = result->as_char();
       }
 

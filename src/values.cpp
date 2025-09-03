@@ -444,7 +444,7 @@ Array::Array(std::vector<Value> array, int line)
 std::string Array::as_string() const {
    std::string result = "[ "s;
    for (int i = 0; i < array.size(); ++i) {
-      result += array.at(i)->as_string() + ' ';
+      result += array.at(i)->as_string() + ", ";
    }
    return result + "]"s;
 }
@@ -467,6 +467,72 @@ Value Array::copy() const {
       copied_array.push_back(element->copy());
    }
    return Array::make(std::move(copied_array), line);
+}
+
+// List value
+
+List::List(std::set<Value> list, int line)
+   : list(std::move(list)), ValueLiteral(ValueType::list, line) {}
+
+std::string List::as_string() const {
+   std::string result = "[ "s;
+   for (const auto& element : list) {
+      result += element->as_string() + ", ";
+   }
+   return result + "]"s;
+}
+
+long double List::as_number() const {
+   fmt::raise(line, "Cannot convert 'List' to 'Number'.");
+}
+
+char List::as_char() const {
+   fmt::raise(line, "Cannot convert 'List' to 'Character'.");
+}
+
+bool List::as_bool() const {
+   return !list.empty();
+}
+
+Value List::copy() const {
+   std::set<Value> copied_list;
+   for (const auto& element : list) {
+      copied_list.insert(element->copy());
+   }
+   return List::make(std::move(copied_list), line);
+}
+
+// Map value
+
+Map::Map(std::map<Value, Value> map, int line)
+   : map(std::move(map)), ValueLiteral(ValueType::map, line) {}
+
+std::string Map::as_string() const {
+   std::string result = "[ "s;
+   for (const auto& [key, value] : map) {
+      result += key->as_string() + ": " + value->as_string() + ", ";
+   }
+   return result + "]"s;
+}
+
+long double Map::as_number() const {
+   fmt::raise(line, "Cannot convert 'Map' to 'Number'.");
+}
+
+char Map::as_char() const {
+   fmt::raise(line, "Cannot convert 'Map' to 'Char'.");
+}
+
+bool Map::as_bool() const {
+   return !map.empty();
+}
+
+Value Map::copy() const {
+   std::map<Value, Value> copied_map;
+   for (const auto& [key, value] : map) {
+      copied_map[key->copy()] = value->copy();
+   }
+   return Map::make(std::move(copied_map), line);
 }
 
 // Native (built-in) function

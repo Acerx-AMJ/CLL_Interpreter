@@ -14,14 +14,14 @@ enum class StmtType : char {
    var_decl, fn_decl, exists, del, ifelse, if_clause, while_loop, for_loop, foreach_loop,
    break_stmt, continue_stmt, return_stmt, unless_stmt,
    assignment, ternary, binary, unary, property, call,
-   identifier, number, character, string, array, null, program
+   identifier, number, character, string, array, list, map, null, program
 };
 
 constexpr std::string_view stmt_type_str[] {
    "VariableDeclaration", "FunctionDeclaration", "ExistsStatement", "DeleteStatement", "IfElseStatement", "IfClauseStatement", "WhileLoopStatement", "ForLoopStatement", "ForEachLoopStatement",
    "BreakStatement", "ContinueStatement", "ReturnStatement", "UnlessStatement",
    "AssignmentExpression", "TernaryExpression", "BinaryExpression", "UnaryExpression", "PropertyAccess", "CallExpression",
-   "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "ArrayLiteral", "NullLiteral", "Program"
+   "IdentifierLiteral", "NumberLiteral", "CharacterLiteral", "StringLiteral", "ArrayLiteral", "ListLiteral", "MapLiteral", "NullLiteral", "Program"
 };
 
 // Statement definition
@@ -365,6 +365,30 @@ struct ArrayLiteral : public Statement {
    ArrayLiteral(std::vector<Stmt> array, int line);
    static Stmt make(std::vector<Stmt> array, int line) {
       return std::make_unique<ArrayLiteral>(std::move(array), line);
+   }
+   Stmt copy() const override;
+};
+
+// List literal
+
+struct ListLiteral : public Statement {
+   std::vector<Stmt> list;
+
+   ListLiteral(std::vector<Stmt> list, int line);
+   static Stmt make(std::vector<Stmt> list, int line) {
+      return std::make_unique<ListLiteral>(std::move(list), line);
+   }
+   Stmt copy() const override;
+};
+
+// Map literal
+
+struct MapLiteral : public Statement {
+   std::vector<std::pair<Stmt, Stmt>> map;
+
+   MapLiteral(std::vector<std::pair<Stmt, Stmt>> map, int line);
+   static Stmt make(std::vector<std::pair<Stmt, Stmt>> map, int line) {
+      return std::make_unique<MapLiteral>(std::move(map), line);
    }
    Stmt copy() const override;
 };

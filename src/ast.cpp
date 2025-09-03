@@ -273,6 +273,32 @@ Stmt ArrayLiteral::copy() const {
    return ArrayLiteral::make(std::move(copied_array), line);
 }
 
+// List literal
+
+ListLiteral::ListLiteral(std::vector<Stmt> list, int line)
+   : list(std::move(list)), Statement(StmtType::list, line) {}
+
+Stmt ListLiteral::copy() const {
+   std::vector<Stmt> copied_list;
+   for (const auto& element : list) {
+      copied_list.push_back(element->copy());
+   }
+   return ListLiteral::make(std::move(copied_list), line);
+}
+
+// Map literal
+
+MapLiteral::MapLiteral(std::vector<std::pair<Stmt, Stmt>> map, int line)
+   : map(std::move(map)), Statement(StmtType::map, line) {}
+
+Stmt MapLiteral::copy() const {
+   std::vector<std::pair<Stmt, Stmt>> copied_map;
+   for (const auto& [key, value] : map) {
+      copied_map.push_back({key->copy(), value->copy()});
+   }
+   return MapLiteral::make(std::move(copied_map), line);
+}
+
 // Null literal
 
 NullLiteral::NullLiteral(int line)

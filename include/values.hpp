@@ -5,17 +5,19 @@
 
 #include "ast.hpp"
 #include <functional>
+#include <map>
 #include <memory>
+#include <set>
 #include <string>
 
 // Value type
 
 enum class ValueType : char {
-   identifier, number, character, string, boolean, array, native_fn, fn, null
+   identifier, number, character, string, boolean, array, list, map, native_fn, fn, null
 };
 
 constexpr std::string_view value_type_str[] {
-   "Identifier", "Number", "Character", "String", "Boolean", "Array", "NativeFunction", "Function", "Null"   
+   "Identifier", "Number", "Character", "String", "Boolean", "Array", "List", "Map", "NativeFunction", "Function", "Null"   
 };
 
 // Value literal definition
@@ -196,6 +198,40 @@ struct Array : public ValueLiteral {
    size_t size() const override {
       return array.size();
    }
+};
+
+// List value
+
+struct List : public ValueLiteral {
+   std::set<Value> list;
+
+   List(std::set<Value> set, int line);
+   static Value make(std::set<Value> set, int line) {
+      return std::make_unique<List>(std::move(set), line);
+   }
+
+   std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
+   bool as_bool() const override;
+   Value copy() const override;
+};
+
+// Map value
+
+struct Map : public ValueLiteral {
+   std::map<Value, Value> map;
+
+   Map(std::map<Value, Value> map, int line);
+   static Value make(std::map<Value, Value> map, int line) {
+      return std::make_unique<Map>(std::move(map), line);
+   }
+
+   std::string as_string() const override;
+   long double as_number() const override;
+   char as_char() const override;
+   bool as_bool() const override;
+   Value copy() const override;
 };
 
 // Native (built-in) function value

@@ -615,13 +615,20 @@ Stmt Parser::parse_primary_expr() {
       fmt::raise_if(program->line, !is(Type::r_brace), "Unterminated scope.");
       advance();
       return std::move(program);
-   } else if (is(Type::l_bracket)) {
+   } else if (is(Type::l_bracket) || (is(Type::keyword) && (current().lexeme == "array"s || current().lexeme == "list"s))) {
+      bool list = (is(Type::keyword) && current().lexeme == "list"s);
+      
+      if (is(Type::keyword)) {
+         advance();
+         fmt::raise_if(line(), !is(Type::l_bracket), "Expected '[' after keyword '{}'.", (list ? "list"s : "array"s));
+      }
       advance();
-      auto array = std::make_unique<ArrayLiteral>(std::vector<Stmt>{}, line());
+      auto original_line = line();
+      std::vector<Stmt> stmts;
 
       if (is(Type::r_bracket)) {
          advance();
-         return std::move(array);
+         return (list ? ListLiteral::make(std::move(stmts), original_line) : ArrayLiteral::make(std::move(stmts), original_line));
       }
 
       auto element = parse_expr();
@@ -631,14 +638,56 @@ Stmt Parser::parse_primary_expr() {
             break;
          }
 
-         array->array.push_back(std::move(element));
+         stmts.push_back(std::move(element));
          element = parse_expr();
       }
 
-      array->array.push_back(std::move(element));
-      fmt::raise_if(array->line, !is(Type::r_bracket), "Unterminated array literal.");
+      stmts.push_back(std::move(element));
+      fmt::raise_if(original_line, !is(Type::r_bracket), "Unterminated {} literal.", (list ? "list"s : "array"s));
       advance();
-      return std::move(array);
+      return (list ? ListLiteral::make(std::move(stmts), original_line) : ArrayLiteral::make(std::move(stmts), original_line));
+   } else if (is(Type::keyword) && current().lexeme == "map"s) {
+      advance();
+      fmt::raise_if(line(), !is(Type::l_bracket), "Expected '[' after keyword 'map'.");
+      advance();
+
+      auto original_line = line();
+      std::vector<std::pair<Stmt, Stmt>> stmts;
+
+      if (is(Type::r_bracket)) {
+         advance();
+         return MapLiteral::make(std::move(stmts), original_line);
+      }
+
+      Stmt key = parse_expr(), value;
+      if (is(Type::colon)) {
+         advance();
+         value = parse_expr();
+      } else {
+         value = key->copy();
+      }
+
+      while (is(Type::comma)) {
+         advance();
+         if (is(Type::r_bracket)) {
+            break;
+         }
+
+         stmts.push_back({std::move(key), std::move(value)});
+         key = parse_expr();
+
+         if (is(Type::colon)) {
+            advance();
+            value = parse_expr();
+         } else {
+            value = key->copy();
+         }
+      }
+
+      stmts.push_back({std::move(key), std::move(value)});
+      fmt::raise_if(original_line, !is(Type::r_bracket), "Unterminated map literal.");
+      advance();
+      return MapLiteral::make(std::move(stmts), original_line);
    } else if (is(Type::keyword)) {
       return std::move(parse_stmt());
    } else {

@@ -555,6 +555,20 @@ Value Interpreter::evaluate_primary_expr(Environment& env, Stmt expr) {
       }
       return Array::make(std::move(array), expr->line);
    }
+   case StmtType::list: {
+      std::set<Value> list;
+      for (auto& element : get_stmt<ListLiteral>(expr).list) {
+         list.insert(evaluate_stmt(env, std::move(element)));
+      }
+      return List::make(std::move(list), expr->line);
+   }
+   case StmtType::map: {
+      std::map<Value, Value> map;
+      for (auto& [key, value] : get_stmt<MapLiteral>(expr).map) {
+         map[evaluate_stmt(env, std::move(key))] = evaluate_stmt(env, std::move(value));
+      }
+      return Map::make(std::move(map), expr->line);
+   }
    case StmtType::null:
       return NullValue::make(expr->line);
    case StmtType::program: {

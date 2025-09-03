@@ -54,7 +54,8 @@ static std::unordered_set<std::string_view> keywords {
    "let", "con", "delete", "exists",
    "if", "elif", "else", "while", "for", "fn", "do",
    "break", "continue", "return", "unless",
-   "and", "or", "not", "in", "is", "isnot"
+   "and", "or", "not", "in", "is", "isnot",
+   "list", "array", "map"
 };
 
 static std::unordered_map<std::string_view, Type> keyword_operators {
